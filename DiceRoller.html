@@ -1,0 +1,2798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Bradley's DnD helper</title>
+	<style id="appstyle">
+		:root {
+			--green: #2e8b3d;
+			--gold: #d99a00;
+			--red: #c0392b;
+			--muted: #666
+		}
+
+		* {
+			box-sizing: border-box
+		}
+
+		body {
+			background: #fff;
+			color: #000;
+			font-family: Arial, Helvetica, sans-serif;
+			font-size: 14px;
+			margin: 0
+		}
+
+		h1 {
+			font-size: 20px;
+			margin: 0
+		}
+
+		h2 {
+			font-size: 17px;
+			margin: 0
+		}
+
+		h3,
+		h4 {
+			font-size: 14px;
+			margin: 12px 0 4px
+		}
+
+		.top {
+			padding: 8px 12px;
+			border-bottom: 1px solid #ccc
+		}
+
+		.hint {
+			color: var(--muted);
+			font-size: 12px
+		}
+
+		.layout {
+			display: grid;
+			grid-template-columns: minmax(330px, 400px) 1fr;
+			gap: 12px;
+			padding: 12px;
+			align-items: start
+		}
+
+		@media(max-width:900px) {
+			.layout {
+				grid-template-columns: 1fr
+			}
+		}
+
+		.slot .awaynote {
+			display: none;
+			padding: 20px;
+			border: 1px dashed #999;
+			text-align: center
+		}
+
+		.slot.away .awaynote {
+			display: block
+		}
+
+		.panel {
+			border: 1px solid #bbb;
+			padding: 10px
+		}
+
+		.panel.inpop {
+			border: 0;
+			min-height: 100vh
+		}
+
+		.ph {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 8px
+		}
+
+		button {
+			cursor: pointer
+		}
+
+		button.primary {
+			font-weight: bold
+		}
+
+		button.on {
+			background: #222;
+			color: #fff
+		}
+
+		button.big {
+			font-size: 15px;
+			padding: 4px 16px
+		}
+
+		@keyframes shake {
+			0% {
+				transform: translate(-2px, 1px) rotate(-3deg)
+			}
+
+			50% {
+				transform: translate(2px, -1px) rotate(3deg)
+			}
+
+			100% {
+				transform: translate(-1px, 2px) rotate(-2deg)
+			}
+		}
+
+		.rolling .tot {
+			display: inline-block;
+			animation: shake .15s infinite
+		}
+
+		button.bad {
+			color: #b00
+		}
+
+		button.good {
+			color: #070
+		}
+
+		input.num {
+			width: 56px
+		}
+
+		label {
+			display: inline-flex;
+			align-items: center;
+			gap: 4px
+		}
+
+		.dgrid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+			gap: 5px
+		}
+
+		.die {
+			display: flex;
+			border: 1px solid #bbb
+		}
+
+		.die .dn {
+			flex: 1
+		}
+
+		.die .cnt {
+			margin-left: 6px;
+			color: var(--muted)
+		}
+
+		.die.has {
+			border-color: #000
+		}
+
+		.die.has .cnt {
+			color: #000;
+			font-weight: bold
+		}
+
+		.modrow,
+		.exprrow,
+		.opts,
+		.toolbar,
+		.tools {
+			display: flex;
+			gap: 5px;
+			align-items: center;
+			margin-top: 7px;
+			flex-wrap: wrap
+		}
+
+		.exprrow input {
+			flex: 1;
+			font-size: 16px;
+			padding: 4px
+		}
+
+		.err {
+			color: #b00;
+			font-size: 12px
+		}
+
+		.last {
+			margin-top: 10px
+		}
+
+		.lr {
+			border: 1px solid #bbb;
+			padding: 6px 10px;
+			text-align: center
+		}
+
+		.lr .lab {
+			color: var(--muted);
+			font-size: 12px
+		}
+
+		.lr .tot {
+			font-size: 34px;
+			font-weight: bold
+		}
+
+		.lr .brk {
+			color: var(--muted);
+			font-size: 12px
+		}
+
+		.lr.crit {
+			border-color: var(--green)
+		}
+
+		.lr.crit .tot {
+			color: var(--green)
+		}
+
+		.lr.fumble {
+			border-color: var(--red)
+		}
+
+		.lr.fumble .tot {
+			color: var(--red)
+		}
+
+		em {
+			color: var(--muted);
+			font-style: normal
+		}
+
+		b.hi {
+			color: var(--green)
+		}
+
+		b.lo {
+			color: var(--red)
+		}
+
+		.favs {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 4px;
+			margin-top: 8px
+		}
+
+		.fav {
+			display: inline-flex
+		}
+
+		.hh {
+			display: flex;
+			justify-content: space-between;
+			align-items: center
+		}
+
+		.hist {
+			max-height: 280px;
+			overflow: auto
+		}
+
+		.h {
+			display: flex;
+			gap: 8px;
+			padding: 3px 0;
+			border-bottom: 1px solid #ddd;
+			font-size: 12px
+		}
+
+		.h .t {
+			color: var(--muted);
+			flex: 0 0 52px
+		}
+
+		.h .f {
+			flex: 1;
+			color: var(--muted)
+		}
+
+		.h .tot {
+			font-weight: bold;
+			color: #000;
+			font-size: 14px
+		}
+
+		.turnbar {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+			margin: 6px 0
+		}
+
+		.turn {
+			flex: 1;
+			text-align: center;
+			border: 1px solid #000;
+			padding: 4px
+		}
+
+		.turn small {
+			display: block;
+			color: var(--muted)
+		}
+
+		.turn b {
+			font-size: 17px
+		}
+
+		.banner {
+			font-size: 12px;
+			color: var(--muted);
+			min-height: 18px;
+			border-bottom: 1px solid #ddd;
+			padding: 2px 0
+		}
+
+		.banner .tot {
+			color: #000;
+			font-weight: bold;
+			font-size: 14px
+		}
+
+		.msg {
+			color: #070;
+			font-size: 12px;
+			min-height: 15px
+		}
+
+		details.box {
+			border: 1px solid #ccc;
+			padding: 6px 10px;
+			margin: 8px 0
+		}
+
+		details.box>summary {
+			cursor: pointer;
+			font-weight: bold
+		}
+
+		.grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+			gap: 6px;
+			margin: 8px 0
+		}
+
+		.grid label {
+			flex-direction: column;
+			align-items: stretch
+		}
+
+		.grid input,
+		.grid select {
+			width: 100%
+		}
+
+		.ecard {
+			border: 1px solid #bbb;
+			margin: 6px 0;
+			padding: 6px
+		}
+
+		.ecard.current {
+			background: #fff6cc;
+			border: 2px solid #000
+		}
+
+		.ecard.defeated {
+			opacity: .5
+		}
+
+		.ehead {
+			display: flex;
+			gap: 8px;
+			align-items: center;
+			flex-wrap: wrap
+		}
+
+		.init {
+			width: 56px;
+			font-size: 17px;
+			font-weight: bold;
+			text-align: center
+		}
+
+		.ename {
+			flex: 1 1 120px;
+			min-width: 110px
+		}
+
+		.nm {
+			width: 100%;
+			font-weight: bold;
+			border: 1px solid transparent;
+			background: transparent
+		}
+
+		.nm:hover {
+			border-color: #bbb
+		}
+
+		.sub {
+			color: var(--muted);
+			font-size: 12px;
+			padding-left: 2px
+		}
+
+		.eb {
+			display: flex;
+			gap: 4px
+		}
+
+		.mrow {
+			display: flex;
+			gap: 5px;
+			align-items: center;
+			flex: 1 1 230px;
+			margin: 2px 0;
+			flex-wrap: wrap
+		}
+
+		.mrow.down .mname {
+			text-decoration: line-through
+		}
+
+		.mname {
+			flex: 1 1 90px;
+			min-width: 80px
+		}
+
+		.hpwrap {
+			flex: 1 1 110px;
+			min-width: 100px
+		}
+
+		.hpbar {
+			height: 7px;
+			background: #ddd
+		}
+
+		.hpbar i {
+			display: block;
+			height: 100%
+		}
+
+		.hpnums {
+			display: flex;
+			gap: 3px;
+			align-items: center;
+			font-size: 12px
+		}
+
+		.hpnums input {
+			width: 50px
+		}
+
+		.amt {
+			width: 50px
+		}
+
+		.chips {
+			display: flex;
+			gap: 3px;
+			flex-wrap: wrap;
+			margin-top: 3px
+		}
+
+		.chip {
+			border: 1px solid #bbb;
+			padding: 0 6px;
+			font-size: 12px
+		}
+
+		.chip.down {
+			opacity: .4;
+			text-decoration: line-through
+		}
+
+		.detail {
+			border-top: 1px solid #ccc;
+			margin-top: 6px;
+			padding-top: 6px
+		}
+
+		.saves {
+			display: flex;
+			gap: 4px;
+			flex-wrap: wrap;
+			margin: 6px 0;
+			align-items: center
+		}
+
+		.atk {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+			margin: 4px 0;
+			flex-wrap: wrap
+		}
+
+		.atk .an {
+			flex: 1 1 90px;
+			font-weight: bold
+		}
+
+		.editbox {
+			border: 1px solid #ddd;
+			padding: 6px;
+			margin-top: 6px
+		}
+
+		.grid3 {
+			display: flex;
+			gap: 8px;
+			flex-wrap: wrap;
+			align-items: flex-end
+		}
+
+		.grid3 .w2 {
+			flex: 1 1 140px
+		}
+
+		.grid3 .w2 input {
+			width: 100%
+		}
+
+		.grid3 label {
+			flex-direction: column;
+			align-items: flex-start
+		}
+
+		.smods {
+			display: flex;
+			gap: 6px;
+			flex-wrap: wrap;
+			margin: 8px 0
+		}
+
+		.smods label {
+			flex-direction: column;
+			align-items: center
+		}
+
+		.atkedit {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+			margin: 4px 0;
+			flex-wrap: wrap
+		}
+
+		.atkedit input:first-child {
+			flex: 1 1 90px
+		}
+
+		.row2 {
+			display: flex;
+			gap: 8px;
+			align-items: center;
+			justify-content: space-between;
+			padding: 3px 0;
+			border-bottom: 1px solid #ddd
+		}
+
+		.avg {
+			margin-top: 6px;
+			font-weight: bold
+		}
+
+		.dice {
+			display: flex;
+			gap: 12px;
+			justify-content: center;
+			flex-wrap: wrap;
+			padding: 12px 0;
+			min-height: 76px;
+			align-items: center
+		}
+
+		.die3 {
+			width: 54px;
+			height: 54px;
+			background: #222;
+			color: #fff;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: bold;
+			font-size: 20px;
+			animation: tumble .55s linear infinite
+		}
+
+		.die3 span {
+			display: block
+		}
+
+		.die3.s6 {
+			border-radius: 10px
+		}
+
+		.die3.s4 {
+			clip-path: polygon(50% 4%, 96% 92%, 4% 92%);
+			padding-top: 14px
+		}
+
+		.die3.s8 {
+			clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%)
+		}
+
+		.die3.s10 {
+			clip-path: polygon(50% 0, 96% 38%, 50% 100%, 4% 38%)
+		}
+
+		.die3.s12 {
+			clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%)
+		}
+
+		.die3.s20 {
+			clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%)
+		}
+
+		.die3.s100 {
+			border-radius: 50%
+		}
+
+		.dice.sm {
+			padding: 2px 0;
+			min-height: 0;
+			gap: 6px;
+			justify-content: flex-start
+		}
+
+		.dice.sm .die3 {
+			width: 24px;
+			height: 24px;
+			font-size: 11px
+		}
+
+		@keyframes tumble {
+			0% {
+				transform: translateY(0) rotate(0)
+			}
+
+			25% {
+				transform: translateY(-24px) rotate(100deg)
+			}
+
+			50% {
+				transform: translateY(0) rotate(200deg)
+			}
+
+			75% {
+				transform: translateY(-12px) rotate(290deg)
+			}
+
+			100% {
+				transform: translateY(0) rotate(360deg)
+			}
+		}
+
+		@keyframes pop {
+			0% {
+				transform: scale(.4)
+			}
+
+			60% {
+				transform: scale(1.25)
+			}
+
+			100% {
+				transform: scale(1)
+			}
+		}
+
+		.lr .tot {
+			display: inline-block;
+			animation: pop .35s ease-out
+		}
+
+		.conds {
+			display: flex;
+			gap: 4px;
+			flex-wrap: wrap;
+			align-items: center;
+			margin: 6px 0
+		}
+
+		.cd {
+			font-size: 12px;
+			padding: 2px 6px
+		}
+
+		.cd.on {
+			background: #222;
+			color: #fff
+		}
+
+		.tags {
+			display: flex;
+			gap: 3px;
+			flex-wrap: wrap;
+			padding-left: 2px;
+			margin-top: 2px
+		}
+
+		.tag {
+			border: 1px solid #888;
+			background: #eee;
+			padding: 0 5px;
+			font-size: 12px
+		}
+
+		.tag .x {
+			padding: 0 3px;
+			border: 0;
+			background: none
+		}
+
+		.trow {
+			display: flex;
+			gap: 6px;
+			align-items: center;
+			margin: 4px 0
+		}
+
+		.trow input {
+			flex: 1;
+			min-width: 90px
+		}
+
+		.trow b {
+			min-width: 48px;
+			text-align: center
+		}
+
+		.trow.ended {
+			background: #fde0e0
+		}
+	</style>
+</head>
+<body>
+	<header class="top">
+		<h1>Bradley's DnD helper</h1>
+		<span class="hint">Saves automatically in this browser. Use Export for a backup file.</span>
+	</header>
+	<main class="layout">
+		<section class="slot" id="slot-roller"></section>
+		<section class="slot" id="slot-tracker"></section>
+	</main>
+
+	<script>
+		(() =>
+		{
+			'use strict';
+			const KEY = 'dnd-dm-table-v1';
+			const ABS = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
+			const DICE = [4, 6, 8, 10, 12, 20, 100];
+			const uid = () => Math.random().toString(36).slice(2, 9);
+			const esc = s => String(s).replace(/[&<>"']/g, c => ({
+				'&': '&amp;',
+				'<': '&lt;',
+				'>': '&gt;',
+				'"': '&quot;',
+				"'": '&#39;'
+			} [c]));
+			const fmt = n => (n >= 0 ? '+' : '−') + Math.abs(n);
+			const fmtE = n => (n >= 0 ? '+' : '-') + Math.abs(n);
+			const rnd = s => Math.floor(Math.random() * s) + 1;
+			const q = (p, n) => p.querySelector('[data-r="' + n + '"]');
+			const clone = o => JSON.parse(JSON.stringify(o));
+			const escRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+			const def = () => ({
+				combat: {
+					round: 1,
+					currentId: null,
+					entries: []
+				},
+				library: [],
+				favorites: [],
+				encounters: [],
+				prefs: {
+					skipDead: true,
+					mode: 'normal',
+					dc: ''
+				},
+				anim: true,
+				expr: '1d20',
+				crit: false,
+				mode: 'normal',
+				history: [],
+				last: null
+			});
+			let DB = def();
+			try
+			{
+				const r = JSON.parse(localStorage.getItem(KEY) || 'null');
+				if (r)
+				{
+					DB = Object.assign(def(), r);
+					DB.prefs = Object.assign(def().prefs, r.prefs || {});
+				}
+			}
+			catch (e)
+			{}
+
+			function save()
+			{
+				try
+				{
+					localStorage.setItem(KEY, JSON.stringify(DB));
+				}
+				catch (e)
+				{}
+			}
+			const ui = {
+				open: new Set(),
+				edit: new Set(),
+				crit: {},
+				tpl: null,
+				err: ''
+			};
+			const wins = {};
+
+			function parseExpr(str)
+			{
+				const s = String(str).replace(/\s+/g, '').toLowerCase();
+				if (!s)
+				{
+					throw new Error('Type something like 2d6+3');
+				}
+				const re = /([+-]?)(?:(\d*)d(\d+)(?:(k[hl]?)(\d+))?|(\d+))/y;
+				const terms = [];
+				let i = 0;
+				while (i < s.length)
+				{
+					re.lastIndex = i;
+					const m = re.exec(s);
+					if (!m)
+					{
+						throw new Error('Can\'t read "' + s.slice(i) + '"');
+					}
+					if (i > 0 && !m[1])
+					{
+						throw new Error('Put + or - between parts');
+					}
+					const sign = m[1] === '-' ? -1 : 1;
+					if (m[3])
+					{
+						terms.push({
+							sign,
+							n: m[2] === '' ? 1 : +m[2],
+							sides: +m[3],
+							keep: m[4] ? {
+								t: m[4] === 'kl' ? 'kl' : 'kh',
+								k: +m[5]
+							} : null
+						});
+					}
+					else
+					{
+						terms.push({
+							sign,
+							flat: +m[6]
+						});
+					}
+					i = re.lastIndex;
+				}
+				return terms;
+			}
+
+			function serialize(terms)
+			{
+				return terms.map((t, i) =>
+				{
+					const body = t.flat !== undefined ? String(t.flat) : t.n + 'd' + t.sides + (t.keep ? t.keep.t + t.keep.k : '');
+					return i === 0 ? (t.sign < 0 ? '-' : '') + body : (t.sign < 0 ? ' - ' : ' + ') + body;
+				}).join('');
+			}
+
+			function rollExpr(str, o)
+			{
+				o = o || {};
+				const terms = parseExpr(str);
+				let total = 0;
+				const htm = [];
+				const d20 = [];
+				terms.forEach((t, i) =>
+				{
+					const lead = (i || t.sign < 0) ? (t.sign < 0 ? '− ' : '+ ') : '';
+					if (t.flat !== undefined)
+					{
+						total += t.sign * t.flat;
+						htm.push(lead + t.flat);
+						return;
+					}
+					let n = t.n;
+					let keep = t.keep;
+					let tr = false;
+					if (o.mode && o.mode !== 'normal' && t.sides === 20 && n === 1 && !keep)
+					{
+						n = 2;
+						keep = {
+							t: o.mode === 'adv' ? 'kh' : 'kl',
+							k: 1
+						};
+						tr = true;
+					}
+					if (o.crit && !tr)
+					{
+						n *= 2;
+					}
+					if (n > 200)
+					{
+						throw new Error('Too many dice (max 200)');
+					}
+					if (t.sides < 2 || t.sides > 1000)
+					{
+						throw new Error('Die size must be 2–1000');
+					}
+					const rolls = Array.from({
+						length: n
+					}, () => rnd(t.sides));
+					let kept = rolls.map(() => true);
+					if (keep)
+					{
+						const k = Math.min(keep.k, n);
+						const idx = rolls.map((v, j) => j).sort((a, b) => keep.t === 'kh' ? rolls[b] - rolls[a] : rolls[a] - rolls[b]);
+						kept = rolls.map(() => false);
+						idx.slice(0, k).forEach(j => kept[j] = true);
+					}
+					const sum = rolls.reduce((s, v, j) => s + (kept[j] ? v : 0), 0);
+					total += t.sign * sum;
+					if (t.sides === 20)
+					{
+						rolls.forEach((v, j) =>
+						{
+							if (kept[j])
+							{
+								d20.push(v);
+							}
+						});
+					}
+					const fv = (v, j) => !kept[j] ? '<s>' + v + '</s>' : (t.sides === 20 && v === 20 ? '<b class="hi">20</b>' : t.sides === 20 && v === 1 ? '<b class="lo">1</b>' : v);
+					htm.push(lead + n + 'd' + t.sides + (keep ? keep.t + keep.k : '') + ' <em>[' + rolls.map(fv).join(', ') + ']</em>');
+				});
+				return {
+					total,
+					html: htm.join(' '),
+					nat: d20.length === 1 ? d20[0] : null
+				};
+			}
+
+			const B = [];
+			const PLAYERS = ['Anwar', 'Haides', 'Fen', 'Marq', 'Elara'];
+			const tplOf = b => ({
+				name: b[0],
+				hp: b[1],
+				ac: b[2],
+				mod: b[3][1],
+				saves: b[3].slice(),
+				attacks: b[4].map(a => ({
+					name: a[0],
+					hit: a[1],
+					dmg: a[2]
+				}))
+			});
+
+			const R = document.createElement('div');
+			R.className = 'panel';
+			R.id = 'roller';
+			R.innerHTML =
+				'<div class="ph"><h2>Dice Roller</h2><button data-a="popout" data-k="roller" class="popbtn">Pop out</button></div>' +
+				'<div class="dgrid">' + DICE.map(s => '<div class="die"><button data-a="dieminus" data-s="' + s + '">−</button><button class="dn" data-a="dieplus" data-s="' + s + '">d' + s + '<span class="cnt" data-c="' + s + '">0</span></button><button data-a="dieplus" data-s="' + s + '">+</button></div>').join('') + '</div>' +
+				'<div class="modrow"><span>Modifier</span><button data-a="modminus" data-d="5">−5</button><button data-a="modminus" data-d="1">−1</button><input type="number" class="num" data-r="mod" data-a="modset"><button data-a="modplus" data-d="1">+1</button><button data-a="modplus" data-d="5">+5</button></div>' +
+				'<div class="exprrow"><input data-r="expr" data-a="expr" placeholder="2d6 + 1d4 + 3   ·   4d6kh3   ·   d20+5" spellcheck="false" autocomplete="off"><button class="primary big" data-a="roll">Roll</button></div>' +
+				'<div class="opts"><label><input type="checkbox" data-a="crit"> Crit (doubles dice)</label><label><input type="checkbox" data-a="anim"> Animate</label>' +
+				'<button data-a="setmode" data-v="normal">Normal</button><button data-a="setmode" data-v="adv">Adv</button><button data-a="setmode" data-v="dis">Dis</button>' +
+				'<button data-a="clear">Clear</button><button data-a="favsave">Save roll</button></div>' +
+				'<div class="hint" style="margin-top:4px">Adv/Dis applies to a single d20. Crit doubles dice only, not modifiers. Supports keep-highest/lowest like 4d6kh3.</div>' +
+				'<div class="avg" data-r="avg"></div>' +
+				'<div class="err" data-r="err"></div>' +
+				'<div class="last" data-r="last"></div>' +
+				'<div class="favs" data-r="favs"></div>' +
+				'<div class="hh"><h3>History</h3><button data-a="clearhist">Clear</button></div>' +
+				'<div class="hist" data-r="hist"></div>';
+
+			const T = document.createElement('div');
+			T.className = 'panel';
+			T.id = 'tracker';
+			T.innerHTML =
+				'<div class="ph"><h2>Initiative Tracker</h2><button data-a="popout" data-k="tracker" class="popbtn">Pop out</button></div>' +
+				'<div class="banner" data-r="banner"></div>' +
+				'<div class="turnbar"><button data-a="prev">◀ Prev</button><div class="turn" data-r="turn"></div><button data-a="next" class="primary big">Next ▶</button></div>' +
+				'<div class="toolbar"><button data-a="start">Start / Restart</button><button data-a="rollall">Reroll NPC initiative</button><button data-a="cleardead">Remove defeated</button></div>' +
+				'<div class="toolbar"><label>Saves &amp; attacks roll <select data-a="mode"><option value="normal">Normal</option><option value="adv">Advantage</option><option value="dis">Disadvantage</option></select></label>' +
+				'<label>Save DC <input type="number" class="num" data-a="dc"></label><label><input type="checkbox" data-a="skip"> Skip defeated</label></div>' +
+				'<div class="msg" data-r="msg"></div>' +
+				'<details class="box" open><summary>Round timers</summary>' +
+				'<div class="toolbar"><input data-f="tname" placeholder="Effect (Bless, burning, etc.)" size="22"><input type="number" class="num" min="1" value="10" data-f="trounds"> rounds <button data-a="addtimer">Add timer</button></div>' +
+				'<div class="hint">Counts down by 1 each time a new round starts. Use + / - to adjust as you go.</div>' +
+				'<div data-r="timers"></div></details>' +
+				'<details class="box addbox" open><summary>+ Add creatures / players</summary>' +
+				'<div class="grid"><label style="grid-column:1/-1">Preset <select data-a="preset" data-f="preset"></select></label>' +
+				'<label>Name<input data-f="name" placeholder="Goblin"></label><label>Quantity<input type="number" min="1" max="50" value="1" data-f="qty"></label>' +
+				'<label>Init modifier<input type="number" value="0" data-f="mod"></label><label>Initiative (blank = roll)<input type="number" step="any" data-f="init"></label>' +
+				'<label>HP (number or 2d8+4)<input data-f="hp" placeholder="12"></label><label>AC<input type="number" value="10" data-f="ac"></label></div>' +
+				'<div class="toolbar"><label><input type="checkbox" data-f="group" checked> Group same creatures (one initiative, expandable)</label><label><input type="checkbox" data-f="player"> Player (enter initiative yourself)</label></div>' +
+				'<button data-a="add" class="primary">Add to initiative</button></details>' +
+				'<div data-r="list"></div>' +
+				'<details class="box"><summary>Save / Load / Library</summary><div data-r="data"></div></details>';
+
+			const slots = {
+				roller: document.getElementById('slot-roller'),
+				tracker: document.getElementById('slot-tracker')
+			};
+			const P = {
+				roller: R,
+				tracker: T
+			};
+			Object.keys(slots).forEach(k =>
+			{
+				slots[k].appendChild(P[k]);
+				const n = document.createElement('div');
+				n.className = 'awaynote';
+				n.innerHTML = 'The ' + (k === 'roller' ? 'dice roller' : 'initiative tracker') + ' is in its own window.<br><br>';
+				const b = document.createElement('button');
+				b.textContent = 'Bring it back';
+				b.onclick = () =>
+				{
+					if (wins[k])
+					{
+						wins[k].close();
+					}
+				};
+				n.appendChild(b);
+				slots[k].appendChild(n);
+			});
+			const fileInput = document.createElement('input');
+			fileInput.type = 'file';
+			fileInput.accept = '.json,application/json';
+			fileInput.style.display = 'none';
+			document.body.appendChild(fileInput);
+
+			async function popOut(key)
+			{
+				if (wins[key])
+				{
+					wins[key].close();
+					return;
+				}
+				const size = key === 'roller' ? [420, 760] : [600, 800];
+				let w = null;
+				if ('documentPictureInPicture' in window)
+				{
+					try
+					{
+						w = await window.documentPictureInPicture.requestWindow({
+							width: size[0],
+							height: size[1]
+						});
+					}
+					catch (e)
+					{
+						w = null;
+					}
+				}
+				if (!w)
+				{
+					try
+					{
+						w = window.open('', 'dnd_' + key, 'popup=yes,width=' + size[0] + ',height=' + size[1]);
+					}
+					catch (e)
+					{
+						w = null;
+					}
+				}
+				if (!w)
+				{
+					alert('The browser blocked the pop-out window. Allow pop-ups for this page and try again.');
+					return;
+				}
+				const d = w.document;
+				d.title = key === 'roller' ? 'Dice Roller' : 'Initiative';
+				const st = d.createElement('style');
+				st.textContent = document.getElementById('appstyle').textContent;
+				d.head.appendChild(st);
+				d.body.className = 'popped';
+				d.body.appendChild(P[key]);
+				P[key].classList.add('inpop');
+				slots[key].classList.add('away');
+				wins[key] = w;
+				updPop();
+				const back = () =>
+				{
+					if (wins[key] !== w)
+					{
+						return;
+					}
+					delete wins[key];
+					slots[key].insertBefore(P[key], slots[key].firstChild);
+					P[key].classList.remove('inpop');
+					slots[key].classList.remove('away');
+					updPop();
+				};
+				w.addEventListener('pagehide', back);
+				w.addEventListener('unload', back);
+			}
+
+			function updPop()
+			{
+				Object.keys(P).forEach(k =>
+				{
+					const b = P[k].querySelector('.popbtn');
+					if (b)
+					{
+						b.textContent = wins[k] ? 'Return' : 'Pop out';
+					}
+				});
+			}
+			window.addEventListener('beforeunload', () => Object.keys(wins).forEach(k =>
+			{
+				try
+				{
+					wins[k].close();
+				}
+				catch (e)
+				{}
+			}));
+			const askIn = (el, m, d) => ((el && el.ownerDocument.defaultView) || window).prompt(m, d || '');
+			const confIn = (el, m) => ((el && el.ownerDocument.defaultView) || window).confirm(m);
+
+			function logRoll(it)
+			{
+				it.t = new Date().toLocaleTimeString([], {
+					hour: 'numeric',
+					minute: '2-digit'
+				});
+				DB.history.unshift(it);
+				if (DB.history.length > 80)
+				{
+					DB.history.length = 80;
+				}
+				DB.last = it;
+				save();
+				renderHist();
+				renderBanner();
+			}
+
+			function syncRoller(skipExpr)
+			{
+				const ex = q(R, 'expr');
+				if (!skipExpr)
+				{
+					ex.value = DB.expr;
+				}
+				let terms = [];
+				try
+				{
+					terms = parseExpr(DB.expr);
+				}
+				catch (e)
+				{
+					terms = null;
+				}
+				DICE.forEach(s =>
+				{
+					const n = terms ? terms.filter(t => t.sides === s && !t.keep && t.sign === 1).reduce((a, t) => a + t.n, 0) : 0;
+					const c = R.querySelector('[data-c="' + s + '"]');
+					c.textContent = n;
+					c.closest('.die').classList.toggle('has', n > 0);
+				});
+				if (terms)
+				{
+					const mod = terms.filter(t => t.flat !== undefined).reduce((a, t) => a + t.sign * t.flat, 0);
+					q(R, 'mod').value = mod;
+				}
+				R.querySelector('[data-a="crit"]').checked = DB.crit;
+				R.querySelector('[data-a="anim"]').checked = DB.anim;
+				R.querySelectorAll('[data-a="setmode"]').forEach(b => b.classList.toggle('on', b.dataset.v === DB.mode));
+				q(R, 'err').textContent = ui.err;
+				const av = q(R, 'avg');
+				if (terms && terms.length)
+				{
+					try
+					{
+						const st = calcStats(DB.expr, {
+							crit: DB.crit,
+							mode: DB.mode
+						});
+						av.textContent = 'Average: ' + nice(st.avg) + '   (range ' + st.min + ' to ' + st.max + ')' + (DB.crit ? '  with crit dice doubled' : '');
+					}
+					catch (e)
+					{
+						av.textContent = '';
+					}
+				}
+				else
+				{
+					av.textContent = '';
+				}
+			}
+
+			function renderHist()
+			{
+				const L = DB.last;
+				q(R, 'last').innerHTML = L ? '<div class="lr ' + (L.tag || '') + '"><div class="lab">' + esc(L.label) + '</div><div class="tot">' + L.total + '</div><div class="brk">' + L.html + '</div></div>' : '<div class="hint">Build a roll above and hit Roll.</div>';
+				q(R, 'favs').innerHTML = DB.favorites.map((f, i) => '<span class="fav" data-i="' + i + '"><button data-a="fav" title="' + esc(f.expr) + '">' + esc(f.name) + '</button><button data-a="favdel">✕</button></span>').join('');
+				q(R, 'hist').innerHTML = DB.history.map(h => '<div class="h ' + (h.tag || '') + '"><span class="t">' + esc(h.t || '') + '</span><span class="f"><b>' + esc(h.label) + '</b><br>' + h.html + '</span><span class="tot">' + h.total + '</span></div>').join('') || '<div class="hint">No rolls yet.</div>';
+			}
+
+			function withTerms(fn)
+			{
+				let terms;
+				try
+				{
+					terms = parseExpr(DB.expr);
+				}
+				catch (e)
+				{
+					ui.err = e.message;
+					syncRoller();
+					return;
+				}
+				fn(terms);
+				DB.expr = terms.length ? serialize(terms) : '';
+				ui.err = '';
+				save();
+				syncRoller();
+			}
+
+			function adjustDie(s, d)
+			{
+				withTerms(terms =>
+				{
+					const t = terms.find(t => t.sides === s && !t.keep && t.sign === 1);
+					if (t)
+					{
+						t.n += d;
+						if (t.n <= 0)
+						{
+							terms.splice(terms.indexOf(t), 1);
+						}
+					}
+					else if (d > 0)
+					{
+						const last = terms.map(x => x.sides ? 1 : 0).lastIndexOf(1);
+						terms.splice(last + 1, 0, {
+							sign: 1,
+							n: d,
+							sides: s,
+							keep: null
+						});
+					}
+				});
+			}
+
+			function setMod(v)
+			{
+				withTerms(terms =>
+				{
+					for (let i = terms.length - 1; i >= 0; i--)
+					{
+						if (terms[i].flat !== undefined)
+						{
+							terms.splice(i, 1);
+						}
+					}
+					if (v)
+					{
+						terms.push({
+							sign: v < 0 ? -1 : 1,
+							flat: Math.abs(v)
+						});
+					}
+				});
+			}
+
+			function curMod()
+			{
+				try
+				{
+					return parseExpr(DB.expr).filter(t => t.flat !== undefined).reduce((a, t) => a + t.sign * t.flat, 0);
+				}
+				catch (e)
+				{
+					return 0;
+				}
+			}
+
+			function calcStats(expr, o)
+			{
+				o = o || {};
+				const terms = parseExpr(expr);
+				let avg = 0;
+				let min = 0;
+				let max = 0;
+				terms.forEach(t =>
+				{
+					if (t.flat !== undefined)
+					{
+						avg += t.sign * t.flat;
+						min += t.sign * t.flat;
+						max += t.sign * t.flat;
+						return;
+					}
+					let n = t.n;
+					let keep = t.keep;
+					let tr = false;
+					const S = t.sides;
+					if (o.mode && o.mode !== 'normal' && S === 20 && n === 1 && !keep)
+					{
+						n = 2;
+						keep = {
+							t: o.mode === 'adv' ? 'kh' : 'kl',
+							k: 1
+						};
+						tr = true;
+					}
+					if (o.crit && !tr)
+					{
+						n *= 2;
+					}
+					let a; let lo; let hi;
+					if (keep)
+					{
+						const k = Math.min(keep.k, n);
+						lo = k;
+						hi = k * S;
+						if (n === 2 && k === 1)
+						{
+							a = keep.t === 'kh' ? (S + 1) * (4 * S - 1) / (6 * S) : (S + 1) * (2 * S + 1) / (6 * S);
+						}
+						else
+						{
+							let sum = 0;
+							const N = 20000;
+							for (let i = 0; i < N; i++)
+							{
+								const r = Array.from({
+									length: n
+								}, () => rnd(S)).sort((x, y) => keep.t === 'kh' ? y - x : x - y);
+								for (let j = 0; j < k; j++)
+								{
+									sum += r[j];
+								}
+							}
+							a = sum / N;
+						}
+					}
+					else
+					{
+						lo = n;
+						hi = n * S;
+						a = n * (S + 1) / 2;
+					}
+					if (t.sign < 0)
+					{
+						avg -= a;
+						min -= hi;
+						max -= lo;
+					}
+					else
+					{
+						avg += a;
+						min += lo;
+						max += hi;
+					}
+				});
+				return {
+					avg,
+					min,
+					max
+				};
+			}
+			const nice = x => String(Math.round(x * 10) / 10);
+			const avgText = e =>
+			{
+				try
+				{
+					return ' (avg ' + nice(calcStats(e).avg) + ')';
+				}
+				catch (x)
+				{
+					return '';
+				}
+			};
+			let animating = false;
+
+			function animList(expr, o)
+			{
+				o = o || {};
+				const out = [];
+				try
+				{
+					parseExpr(expr).forEach(t =>
+					{
+						if (!t.sides)
+						{
+							return;
+						}
+						let n = t.n;
+						if (o.mode && o.mode !== 'normal' && t.sides === 20 && n === 1 && !t.keep)
+						{
+							n = 2;
+						}
+						else if (o.crit)
+						{
+							n *= 2;
+						}
+						for (let i = 0; i < Math.min(n, 10) && out.length < 12; i++)
+						{
+							out.push(t.sides);
+						}
+					});
+				}
+				catch (e)
+				{}
+				return out.length ? out : [20];
+			}
+
+			function diceHTML(list, cls)
+			{
+				return '<div class="dice ' + cls + '">' + list.map(s => '<div class="die3 s' + ([4, 8, 10, 12, 20, 100].indexOf(s) >= 0 ? s : 6) + '" data-s="' + s + '" style="animation-delay:-' + (Math.random() * .5).toFixed(2) + 's"><span>' + rnd(s) + '</span></div>').join('') + '</div>';
+			}
+
+			function withAnim(fn, expr, o)
+			{
+				const run = () =>
+				{
+					try
+					{
+						fn();
+					}
+					catch (e)
+					{
+						flash('Error: ' + e.message);
+					}
+				};
+				if (!DB.anim || animating)
+				{
+					run();
+					return;
+				}
+				animating = true;
+				const list = animList(expr, o);
+				const t0 = Date.now();
+				q(R, 'last').innerHTML = '<div class="lr"><div class="lab">Rolling</div>' + diceHTML(list, '') + '</div>';
+				q(T, 'banner').innerHTML = diceHTML(list, 'sm');
+				const iv = setInterval(() =>
+				{
+					[R, T].forEach(p => p.querySelectorAll('.die3').forEach(d =>
+					{
+						d.firstChild.textContent = rnd(+d.dataset.s);
+					}));
+					if (Date.now() - t0 > 900)
+					{
+						clearInterval(iv);
+						animating = false;
+						run();
+					}
+				}, 70);
+			}
+
+			function doRoll()
+			{
+				withAnim(doRollNow, DB.expr, {
+					crit: DB.crit,
+					mode: DB.mode
+				});
+			}
+
+			function doRollNow()
+			{
+				try
+				{
+					const r = rollExpr(DB.expr, {
+						crit: DB.crit,
+						mode: DB.mode
+					});
+					ui.err = '';
+					logRoll({
+						label: DB.expr + (DB.crit ? '  (CRIT – dice doubled)' : '') + (DB.mode !== 'normal' ? '  (' + (DB.mode === 'adv' ? 'advantage' : 'disadvantage') + ')' : ''),
+						total: r.total,
+						html: r.html,
+						tag: r.nat === 20 ? 'crit' : r.nat === 1 ? 'fumble' : ''
+					});
+				}
+				catch (e)
+				{
+					ui.err = e.message;
+				}
+				syncRoller(true);
+			}
+			R.addEventListener('click', e =>
+			{
+				const b = e.target.closest('button[data-a]');
+				if (!b)
+				{
+					return;
+				}
+				const a = b.dataset.a;
+				switch (a)
+				{
+					case 'popout':
+						popOut('roller');
+						break;
+					case 'dieplus':
+						adjustDie(+b.dataset.s, 1);
+						break;
+					case 'dieminus':
+						adjustDie(+b.dataset.s, -1);
+						break;
+					case 'modplus':
+						setMod(curMod() + (+b.dataset.d));
+						break;
+					case 'modminus':
+						setMod(curMod() - (+b.dataset.d));
+						break;
+					case 'roll':
+						doRoll();
+						break;
+					case 'clear':
+						DB.expr = '';
+						ui.err = '';
+						save();
+						syncRoller();
+						break;
+					case 'setmode':
+						DB.mode = b.dataset.v;
+						save();
+						syncRoller(true);
+						break;
+					case 'favsave':
+					{
+						if (!DB.expr.trim())
+						{
+							break;
+						}
+						const n = askIn(b, 'Name for this roll (e.g. "Greatsword", "Fireball")?', DB.expr);
+						if (n)
+						{
+							DB.favorites.push({
+								name: n,
+								expr: DB.expr
+							});
+							save();
+							renderHist();
+						}
+						break;
+					}
+					case 'fav':
+					{
+						const f = DB.favorites[+b.closest('[data-i]').dataset.i];
+						if (f)
+						{
+							DB.expr = f.expr;
+							syncRoller();
+							doRoll();
+						}
+						break;
+					}
+					case 'favdel':
+						DB.favorites.splice(+b.closest('[data-i]').dataset.i, 1);
+						save();
+						renderHist();
+						break;
+					case 'clearhist':
+						DB.history = [];
+						DB.last = null;
+						save();
+						renderHist();
+						renderBanner();
+						break;
+				}
+			});
+			R.addEventListener('input', e =>
+			{
+				if (e.target.dataset.a === 'expr')
+				{
+					DB.expr = e.target.value;
+					ui.err = '';
+					save();
+					syncRoller(true);
+				}
+			});
+			R.addEventListener('change', e =>
+			{
+				const a = e.target.dataset.a;
+				if (a === 'modset')
+				{
+					setMod(parseInt(e.target.value) || 0);
+				}
+				if (a === 'crit')
+				{
+					DB.crit = e.target.checked;
+					save();
+					syncRoller(true);
+				}
+				if (a === 'anim')
+				{
+					DB.anim = e.target.checked;
+					save();
+				}
+			});
+			R.addEventListener('keydown', e =>
+			{
+				if (e.key === 'Enter' && e.target.dataset.a === 'expr')
+				{
+					doRoll();
+				}
+			});
+
+			const ent = el =>
+			{
+				const x = el.closest('[data-id]');
+				return x ? DB.combat.entries.find(e => e.id === x.dataset.id) : null;
+			};
+			const mem = (e, el) =>
+			{
+				const x = el.closest('[data-m]');
+				return x ? e.members.find(m => m.id === x.dataset.m) : null;
+			};
+			const atk = (e, el) =>
+			{
+				const x = el.closest('[data-x]');
+				return x ? e.attacks.find(a => a.id === x.dataset.x) : null;
+			};
+			const aliveM = e => e.members.filter(m => m.max === 0 || m.hp > 0);
+			const defeated = e => e.members.length > 0 && e.members.every(m => m.max > 0 && m.hp <= 0);
+			const isActive = e => !DB.prefs.skipDead || !defeated(e);
+
+			function sortEntries()
+			{
+				DB.combat.entries.sort((a, b) => (b.init - a.init) || (b.mod - a.mod));
+			}
+
+			function flash(m)
+			{
+				const el = q(T, 'msg');
+				el.textContent = m;
+				clearTimeout(flash.t);
+				flash.t = setTimeout(() =>
+				{
+					el.textContent = '';
+				}, 3500);
+			}
+
+			function commit()
+			{
+				save();
+				renderTracker();
+			}
+
+			function timers()
+			{
+				return DB.combat.timers || (DB.combat.timers = []);
+			}
+
+			function step(dir)
+			{
+				const c = DB.combat;
+				const L = c.entries;
+				const ended = [];
+				if (!L.length)
+				{
+					return ended;
+				}
+				const r0 = c.round;
+				let i = L.findIndex(e => e.id === c.currentId);
+				if (i < 0)
+				{
+					i = dir > 0 ? -1 : 0;
+				}
+				for (let k = 0; k < L.length; k++)
+				{
+					let j = i + dir;
+					if (j >= L.length)
+					{
+						j = 0;
+						c.round++;
+					}
+					else if (j < 0)
+					{
+						j = L.length - 1;
+						c.round = Math.max(1, c.round - 1);
+					}
+					i = j;
+					if (isActive(L[i]))
+					{
+						c.currentId = L[i].id;
+						break;
+					}
+				}
+				const d = c.round - r0;
+				if (d !== 0)
+				{
+					timers().forEach(t =>
+					{
+						const o = t.rounds;
+						t.rounds = Math.max(0, t.rounds - d);
+						if (o > 0 && t.rounds === 0)
+						{
+							ended.push(t.name);
+						}
+					});
+				}
+				return ended;
+			}
+
+			function removeEntry(id)
+			{
+				const c = DB.combat;
+				const i = c.entries.findIndex(e => e.id === id);
+				if (i < 0)
+				{
+					return;
+				}
+				const wasCur = c.currentId === id;
+				c.entries.splice(i, 1);
+				ui.open.delete(id);
+				if (wasCur)
+				{
+					const L = c.entries;
+					if (!L.length)
+					{
+						c.currentId = null;
+					}
+					else
+					{
+						let j = i % L.length;
+						for (let k = 0; k < L.length; k++)
+						{
+							if (isActive(L[j]))
+							{
+								break;
+							}
+							j = (j + 1) % L.length;
+						}
+						c.currentId = L[j].id;
+					}
+				}
+			}
+
+			function existingCount(base)
+			{
+				const re = new RegExp('^' + escRe(base) + '(?: (\\d+))?$', 'i');
+				let mx = 0;
+				DB.combat.entries.forEach(e =>
+				{
+					[e.name].concat(e.members.map(m => m.name)).forEach(n =>
+					{
+						const m = re.exec(n);
+						if (m)
+						{
+							mx = Math.max(mx, m[1] ? +m[1] : 1);
+						}
+					});
+				});
+				return mx;
+			}
+
+			function renderPresets()
+			{
+				const sel = T.querySelector('[data-f="preset"]');
+				sel.innerHTML = '<option value="">Custom (blank)</option>' + '<optgroup label="Players">' + PLAYERS.map((p, i) => '<option value="p:' + i + '">' + p + '</option>').join('') + '</optgroup>' +
+					(DB.library.length ? '<optgroup label="My saved creatures">' + DB.library.map(l => '<option value="l:' + l.id + '">' + esc(l.name) + '</option>').join('') + '</optgroup>' : '') +
+					(B.length ? '<optgroup label="Common monsters">' + B.map((b, i) => '<option value="b:' + i + '">' + esc(b[0]) + '</option>').join('') + '</optgroup>' : '');
+			}
+
+			function applyPreset(v)
+			{
+				const f = n => T.querySelector('[data-f="' + n + '"]');
+				let t = null;
+				if (v && v[0] === 'p')
+				{
+					f('name').value = PLAYERS[+v.slice(2)];
+					f('qty').value = 1;
+					f('mod').value = 0;
+					f('hp').value = '';
+					f('ac').value = '';
+					f('init').value = '';
+					f('player').checked = true;
+					ui.tpl = {
+						saves: [0, 0, 0, 0, 0, 0],
+						attacks: []
+					};
+					return;
+				}
+				f('player').checked = false;
+				if (v && v[0] === 'b')
+				{
+					t = tplOf(B[+v.slice(2)]);
+				}
+				else if (v && v[0] === 'l')
+				{
+					t = DB.library.find(x => x.id === v.slice(2));
+				}
+				if (!t)
+				{
+					ui.tpl = null;
+					return;
+				}
+				f('name').value = t.name;
+				f('mod').value = t.mod;
+				f('hp').value = t.hp;
+				f('ac').value = t.ac;
+				f('init').value = '';
+				ui.tpl = {
+					saves: t.saves.slice(),
+					attacks: t.attacks.map(a => ({
+						name: a.name,
+						hit: a.hit,
+						dmg: a.dmg
+					}))
+				};
+			}
+
+			function doAdd()
+			{
+				const f = n => T.querySelector('[data-f="' + n + '"]');
+				const base = f('name').value.trim() || 'Creature';
+				const qty = Math.max(1, Math.min(50, parseInt(f('qty').value) || 1));
+				const player = f('player').checked;
+				const group = f('group').checked && qty > 1 && !player;
+				const mod = parseInt(f('mod').value) || 0;
+				const ac = parseInt(f('ac').value) || (player ? 0 : 10);
+				const hpStr = f('hp').value.trim();
+				const initStr = f('init').value.trim();
+				const tpl = ui.tpl || {
+					saves: [0, 0, 0, 0, 0, 0],
+					attacks: [{
+						name: 'Attack',
+						hit: 3,
+						dmg: '1d6+1'
+					}]
+				};
+				const rollHP = () =>
+				{
+					if (!hpStr)
+					{
+						return 0;
+					}
+					if (/^\d+$/.test(hpStr))
+					{
+						return +hpStr;
+					}
+					try
+					{
+						return Math.max(1, rollExpr(hpStr).total);
+					}
+					catch (e)
+					{
+						return 0;
+					}
+				};
+				const inits = [];
+				const getInit = nm =>
+				{
+					if (initStr !== '' && !isNaN(parseFloat(initStr)))
+					{
+						return parseFloat(initStr);
+					}
+					if (player)
+					{
+						return 0;
+					}
+					const r = rollExpr('1d20' + (mod ? fmtE(mod) : ''));
+					inits.push({
+						n: nm,
+						r
+					});
+					return r.total;
+				};
+				const ex = existingCount(base);
+				const names = (qty === 1 && ex === 0) ? [base] : Array.from({
+					length: qty
+				}, (_, i) => base + ' ' + (ex + i + 1));
+				const mk = (name, members, grp, init) => ({
+					id: uid(),
+					name,
+					init,
+					mod,
+					ac,
+					player,
+					notes: '',
+					group: grp,
+					saves: tpl.saves.slice(),
+					attacks: tpl.attacks.map(a => ({
+						id: uid(),
+						name: a.name,
+						hit: a.hit,
+						dmg: a.dmg
+					})),
+					members
+				});
+				const mm = n =>
+				{
+					const h = rollHP();
+					return {
+						id: uid(),
+						name: n,
+						hp: h,
+						max: h
+					};
+				};
+				if (group)
+				{
+					DB.combat.entries.push(mk(base, names.map(mm), true, getInit(base)));
+				}
+				else
+				{
+					names.forEach(n => DB.combat.entries.push(mk(n, [mm(n)], false, getInit(n))));
+				}
+				if (inits.length)
+				{
+					logRoll({
+						label: 'Initiative – ' + base,
+						total: inits.map(x => x.r.total).join(', '),
+						html: inits.map(x => (inits.length > 1 ? esc(x.n) + ': ' : '') + x.r.html).join('<br>')
+					});
+				}
+				sortEntries();
+				commit();
+				flash('Added ' + qty + ' × ' + base);
+				f('init').value = '';
+			}
+
+			function rollInitFor(list)
+			{
+				const out = [];
+				list.forEach(e =>
+				{
+					const r = rollExpr('1d20' + (e.mod ? fmtE(e.mod) : ''));
+					e.init = r.total;
+					out.push({
+						n: e.name,
+						r
+					});
+				});
+				if (out.length)
+				{
+					logRoll({
+						label: 'Initiative',
+						total: out.map(x => x.r.total).join(', '),
+						html: out.map(x => esc(x.n) + ': ' + x.r.html).join('<br>')
+					});
+				}
+			}
+
+			function rollSave(e, i)
+			{
+				const dc = parseInt(DB.prefs.dc);
+				const hasDc = !isNaN(dc);
+				const who = aliveM(e);
+				const L = who.length ? who : e.members;
+				const res = L.map(m =>
+				{
+					const r = rollExpr('1d20' + fmtE(e.saves[i]), {
+						mode: DB.prefs.mode
+					});
+					return {
+						m,
+						r,
+						ok: hasDc ? r.total >= dc : null
+					};
+				});
+				const mark = ok => ok === null ? '' : ok ? ' ✓' : ' ✗';
+				const label = e.name + ' ' + ABS[i].toUpperCase() + ' save' + (hasDc ? ' vs DC ' + dc : '') + (DB.prefs.mode !== 'normal' ? (DB.prefs.mode === 'adv' ? ' (adv)' : ' (dis)') : '');
+				if (!e.group || res.length === 1)
+				{
+					const x = res[0];
+					logRoll({
+						label,
+						total: x.r.total + mark(x.ok),
+						html: x.r.html,
+						tag: x.r.nat === 20 ? 'crit' : x.r.nat === 1 ? 'fumble' : ''
+					});
+				}
+				else
+				{
+					logRoll({
+						label,
+						total: res.map(x => x.r.total + mark(x.ok)).join(' · '),
+						html: res.map(x => esc(x.m.name) + ': ' + x.r.html + ' = <b>' + x.r.total + '</b>' + mark(x.ok)).join('<br>')
+					});
+				}
+			}
+
+			function attackHit(e, a)
+			{
+				const r = rollExpr('1d20' + fmtE(a.hit), {
+					mode: DB.prefs.mode
+				});
+				const crit = r.nat === 20;
+				ui.crit[e.id + ':' + a.id] = crit;
+				logRoll({
+					label: e.name + ': ' + a.name + ' – to hit',
+					total: r.total,
+					html: r.html + (crit ? ' <b class="hi">CRIT!</b>' : r.nat === 1 ? ' <b class="lo">natural 1</b>' : ''),
+					tag: crit ? 'crit' : r.nat === 1 ? 'fumble' : ''
+				});
+				renderList();
+			}
+
+			function attackDmg(e, a)
+			{
+				const crit = !!ui.crit[e.id + ':' + a.id];
+				const r = rollExpr(a.dmg, {
+					crit
+				});
+				logRoll({
+					label: e.name + ': ' + a.name + ' – damage' + (crit ? ' (CRIT)' : ''),
+					total: r.total,
+					html: r.html,
+					tag: crit ? 'crit' : ''
+				});
+			}
+
+			function renderBanner()
+			{
+				const L = DB.last;
+				q(T, 'banner').innerHTML = L ? '<b>' + esc(L.label) + '</b> → <span class="tot">' + L.total + '</span> <span class="brk">' + L.html + '</span>' : 'Last roll shows here.';
+			}
+
+			function renderTurn()
+			{
+				const c = DB.combat;
+				const cur = c.entries.find(e => e.id === c.currentId);
+				q(T, 'turn').innerHTML = '<small>Round ' + c.round + '</small><b>' + (cur ? esc(cur.name) : 'Not started') + '</b>';
+			}
+
+			function hpCtl(m, eid, showName)
+			{
+				const tracked = m.max > 0;
+				const pct = tracked ? Math.max(0, Math.min(100, m.hp / m.max * 100)) : 0;
+				const col = pct > 50 ? 'var(--green)' : pct > 25 ? 'var(--gold)' : 'var(--red)';
+				return '<div class="mrow ' + (tracked && m.hp <= 0 ? 'down' : '') + '" data-id="' + eid + '" data-m="' + m.id + '">' +
+					(showName ? '<input class="mname" data-a="mname" value="' + esc(m.name) + '">' : '') +
+					'<div class="hpwrap"><div class="hpbar"><i style="width:' + pct + '%;background:' + col + '"></i></div>' +
+					'<div class="hpnums"><input type="number" data-a="sethp" value="' + m.hp + '" title="Current HP"> / <input type="number" data-a="setmax" value="' + m.max + '" title="Max HP">' + (tracked && m.hp <= 0 ? ' <b style="color:var(--red)">DOWN</b>' : '') + '</div></div>' +
+					'<input type="number" min="0" class="num amt" placeholder="amt" data-f="amt">' +
+					'<button data-a="dmg" class="bad" title="Damage">−</button><button data-a="heal" class="good" title="Heal">+</button>' +
+					(showName ? '<button data-a="rmmember" class="x" title="Remove">✕</button>' : '') + '</div>';
+			}
+
+			function editHTML(e)
+			{
+				return '<div class="editbox"><div class="grid3"><label>AC<input type="number" class="num" data-a="ac" value="' + e.ac + '"></label>' +
+					'<label>Init mod<input type="number" class="num" data-a="mod" value="' + e.mod + '"></label>' +
+					'<label class="w2">Notes / conditions<input data-a="notes" value="' + esc(e.notes || '') + '" placeholder="prone, concentrating…"></label></div>' +
+					'<div class="smods">' + ABS.map((a, i) => '<label>' + a.toUpperCase() + '<input type="number" class="num" data-a="savemod" data-x="' + i + '" value="' + e.saves[i] + '"></label>').join('') + '</div>' +
+					e.attacks.map(a => '<div class="atkedit" data-x="' + a.id + '"><input data-a="atkname" value="' + esc(a.name) + '" placeholder="Name"><label>Hit<input type="number" class="num" data-a="atkhit" value="' + a.hit + '"></label><input data-a="atkdmg" value="' + esc(a.dmg) + '" placeholder="1d8+3"><button data-a="delattack" class="x">✕</button></div>').join('') +
+					'<button data-a="addattack">+ Attack</button></div>';
+			}
+			const COND = ['Blinded', 'Charmed', 'Deafened', 'Exhaustion', 'Frightened', 'Grappled', 'Incapacitated', 'Invisible', 'Paralyzed', 'Petrified', 'Poisoned', 'Prone', 'Restrained', 'Stunned', 'Unconscious'];
+			const isStd = c => COND.indexOf(c) >= 0 || /^Exhaustion \d$/.test(c);
+
+			function condHTML(e)
+			{
+				const cs = e.conds || [];
+				return '<div class="conds"><span class="hint">Conditions:</span>' + COND.map(c =>
+				{
+					let on; let label = c;
+					if (c === 'Exhaustion')
+					{
+						const x = cs.find(v => v.indexOf('Exhaustion ') === 0);
+						on = !!x;
+						if (x)
+						{
+							label = x;
+						}
+					}
+					else
+					{
+						on = cs.indexOf(c) >= 0;
+					}
+					return '<button class="cd' + (on ? ' on' : '') + '" data-a="cond" data-x="' + c + '">' + label + '</button>';
+				}).join('') + '</div>' +
+					'<div class="conds"><label><input type="checkbox" data-a="conc"' + (e.conc ? ' checked' : '') + '> Concentrating</label> <span class="hint">Custom:</span><input data-f="cust" placeholder="Hexed, Bless, etc."><button data-a="addcond">Add</button>' +
+					cs.filter(c => !isStd(c)).map(c => '<span class="tag">' + esc(c) + ' <button class="x" data-a="rmcond" data-x="' + esc(c) + '">✕</button></span>').join('') + '</div>';
+			}
+
+			function tagsHTML(e)
+			{
+				const t = (e.conc ? ['Concentrating'] : []).concat(e.conds || []);
+				return t.length ? '<div class="tags">' + t.map(c => '<span class="tag">' + esc(c) + '</span>').join('') + '</div>' : '';
+			}
+
+			function entryHTML(e)
+			{
+				const cur = DB.combat.currentId === e.id;
+				const open = ui.open.has(e.id);
+				const edit = ui.edit.has(e.id);
+				const alive = aliveM(e).length;
+				let mid;
+				if (!e.group)
+				{
+					mid = hpCtl(e.members[0], e.id, false);
+				}
+				else
+				{
+					const th = e.members.reduce((s, m) => s + m.hp, 0);
+					const tm = e.members.reduce((s, m) => s + m.max, 0);
+					const pct = tm ? th / tm * 100 : 0;
+					const col = pct > 50 ? 'var(--green)' : pct > 25 ? 'var(--gold)' : 'var(--red)';
+					mid = '<div class="hpwrap" style="flex:1 1 200px"><div class="hpbar"><i style="width:' + pct + '%;background:' + col + '"></i></div>' +
+						'<div class="chips">' + e.members.map(m => '<span class="chip ' + (m.max > 0 && m.hp <= 0 ? 'down' : '') + '" title="' + esc(m.name) + '">' + (m.max ? m.hp : '–') + '</span>').join('') + '</div></div>';
+				}
+				const detail = !open ? '' : '<div class="detail">' +
+					(e.group ? e.members.map(m => hpCtl(m, e.id, true)).join('') + '<button data-a="addmember">+ Add another</button>' : '') +
+					'<div class="saves"><span class="hint">Saves:</span>' + ABS.map((a, i) => '<button class="sv" data-a="save" data-x="' + i + '">' + a.toUpperCase() + ' ' + fmt(e.saves[i]) + '</button>').join('') + '</div>' +
+					e.attacks.map(a => '<div class="atk" data-x="' + a.id + '"><span class="an">' + esc(a.name) + '</span><button data-a="hit">To hit ' + fmt(a.hit) + '</button><button data-a="dmgroll">Dmg ' + esc(a.dmg) + avgText(a.dmg) + '</button><label><input type="checkbox" data-a="atkcrit" ' + (ui.crit[e.id + ':' + a.id] ? 'checked' : '') + '> crit</label></div>').join('') +
+					condHTML(e) + '<div class="tools"><button data-a="edit">' + (edit ? 'Close editor' : 'Edit stats / attacks') + '</button><button data-a="tolib">Save to library</button></div>' +
+					(edit ? editHTML(e) : '') + '</div>';
+				return '<div class="ecard ' + (cur ? 'current' : '') + ' ' + (defeated(e) ? 'defeated' : '') + '" data-id="' + e.id + '">' +
+					'<div class="ehead"><input class="init" type="number" step="any" data-a="init" value="' + e.init + '" title="Initiative">' +
+					'<div class="ename"><input class="nm" data-a="name" value="' + esc(e.name) + '"><div class="sub">' + [e.ac ? 'AC ' + e.ac : '', e.group ? alive + '/' + e.members.length + ' alive' : '', e.player ? 'player' : '', e.notes ? esc(e.notes) : ''].filter(Boolean).join(' · ') + '</div>' + tagsHTML(e) + '</div>' +
+					mid +
+					'<div class="eb"><button data-a="reroll" title="Reroll initiative">Reroll</button><button data-a="open" title="Details, saves, attacks">' + (open ? '▲' : '▼') + '</button><button data-a="remove" class="x" title="Remove">✕</button></div></div>' + detail + '</div>';
+			}
+
+			function renderList()
+			{
+				const L = DB.combat.entries;
+				q(T, 'list').innerHTML = L.length ? L.map(entryHTML).join('') : '<div class="hint" style="padding:14px;text-align:center">No creatures yet. Add some above.</div>';
+			}
+
+			function renderData()
+			{
+				const encs = DB.encounters;
+				const lib = DB.library;
+				q(T, 'data').innerHTML =
+					'<div class="tools"><button data-a="saveenc">Save current encounter…</button><button data-a="export">Export backup file</button><button data-a="import">Import file</button><button data-a="newcombat" class="bad">Clear combat</button></div>' +
+					'<h4>Saved encounters</h4>' + (encs.length ? encs.map((x, i) => '<div class="row2" data-i="' + i + '"><span>' + esc(x.name) + ' <span class="hint">· ' + x.combat.entries.length + ' entries · round ' + x.combat.round + ' · ' + esc(x.date) + '</span></span><span><button data-a="loadenc">Load</button> <button data-a="delenc" class="x">✕</button></span></div>').join('') : '<div class="hint">None saved yet.</div>') +
+					'<h4>My creature library</h4>' + (lib.length ? lib.map((x, i) => '<div class="row2" data-i="' + i + '"><span>' + esc(x.name) + ' <span class="hint">· HP ' + x.hp + ' · AC ' + x.ac + ' · ' + x.attacks.length + ' attacks</span></span><button data-a="dellib" class="x">✕</button></div>').join('') : '<div class="hint">Use “Save to library” on any creature, then pick it from the Preset list.</div>') +
+					'<p class="hint">The current combat auto-saves in this browser every change, so you can close the tab mid-fight. Use Export for a file backup or to move to another computer.</p>';
+			}
+
+			function syncToolbar()
+			{
+				T.querySelector('[data-a="mode"]').value = DB.prefs.mode;
+				T.querySelector('[data-a="dc"]').value = DB.prefs.dc;
+				T.querySelector('[data-a="skip"]').checked = DB.prefs.skipDead;
+			}
+
+			function renderTimers()
+			{
+				const L = timers();
+				q(T, 'timers').innerHTML = L.length ? L.map(t => '<div class="trow' + (t.rounds === 0 ? ' ended' : '') + '" data-t="' + t.id + '"><input data-a="tname2" value="' + esc(t.name) + '"><button data-a="tminus">-</button><b>' + (t.rounds === 0 ? 'ENDED' : t.rounds) + '</b><button data-a="tplus">+</button><span class="hint">rounds left</span><button class="x" data-a="trm">✕</button></div>').join('') : '<div class="hint">No timers yet.</div>';
+			}
+
+			function renderTracker()
+			{
+				renderTimers();
+				renderTurn();
+				renderList();
+				renderData();
+				renderBanner();
+			}
+
+			function exportFile()
+			{
+				const data = JSON.stringify({
+					app: 'dnd-dm-table',
+					v: 1,
+					combat: DB.combat,
+					library: DB.library,
+					favorites: DB.favorites,
+					encounters: DB.encounters,
+					prefs: DB.prefs
+				}, null, 1);
+				const a = document.createElement('a');
+				a.href = URL.createObjectURL(new Blob([data], {
+					type: 'application/json'
+				}));
+				a.download = 'dnd-table-save-' + new Date().toISOString().slice(0, 10) + '.json';
+				document.body.appendChild(a);
+				a.click();
+				a.remove();
+				setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+			}
+			fileInput.addEventListener('change', async() =>
+			{
+				const f = fileInput.files[0];
+				if (!f)
+				{
+					return;
+				}
+				try
+				{
+					const o = JSON.parse(await f.text());
+					if (o.combat)
+					{
+						DB.combat = o.combat;
+					}
+					(o.library || []).forEach(x =>
+					{
+						if (!DB.library.some(y => y.id === x.id))
+						{
+							DB.library.push(x);
+						}
+					});
+					(o.encounters || []).forEach(x =>
+					{
+						if (!DB.encounters.some(y => y.id === x.id))
+						{
+							DB.encounters.push(x);
+						}
+					});
+					(o.favorites || []).forEach(x =>
+					{
+						if (!DB.favorites.some(y => y.name === x.name && y.expr === x.expr))
+						{
+							DB.favorites.push(x);
+						}
+					});
+					ui.open.clear();
+					ui.edit.clear();
+					save();
+					renderPresets();
+					renderHist();
+					commit();
+					flash('Imported ' + f.name);
+				}
+				catch (e)
+				{
+					flash('Could not read that file');
+				}
+				fileInput.value = '';
+			});
+
+			function tAct(a, b)
+			{
+				const c = DB.combat;
+				try
+				{
+					switch (a)
+					{
+						case 'popout':
+							popOut('tracker');
+							break;
+						case 'next':
+						{
+							const en = step(1);
+							commit();
+							scrollCur();
+							if (en.length)
+							{
+								flash('Timer ended: ' + en.join(', '));
+							}
+							break;
+						}
+						case 'prev':
+							step(-1);
+							commit();
+							scrollCur();
+							break;
+						case 'start':
+							c.round = 1;
+							c.currentId = null;
+							step(1);
+							commit();
+							scrollCur();
+							break;
+						case 'rollall':
+							rollInitFor(c.entries.filter(e => !e.player));
+							sortEntries();
+							commit();
+							break;
+						case 'cleardead':
+							c.entries.filter(defeated).map(e => e.id).forEach(removeEntry);
+							commit();
+							break;
+						case 'add':
+							doAdd();
+							break;
+						case 'cond':
+						{
+							const e = ent(b);
+							const n = b.dataset.x;
+							e.conds = e.conds || [];
+							if (n === 'Exhaustion')
+							{
+								const i = e.conds.findIndex(v => v.indexOf('Exhaustion ') === 0);
+								let lv = i >= 0 ? +e.conds[i].split(' ')[1] : 0;
+								lv = (lv + 1) % 7;
+								if (i >= 0)
+								{
+									e.conds.splice(i, 1);
+								}
+								if (lv)
+								{
+									e.conds.push('Exhaustion ' + lv);
+								}
+							}
+							else
+							{
+								const i = e.conds.indexOf(n);
+								if (i >= 0)
+								{
+									e.conds.splice(i, 1);
+								}
+								else
+								{
+									e.conds.push(n);
+								}
+							}
+							commit();
+							break;
+						}
+						case 'rmcond':
+						{
+							const e = ent(b);
+							e.conds = (e.conds || []).filter(c => c !== b.dataset.x);
+							commit();
+							break;
+						}
+						case 'addcond':
+						{
+							const e = ent(b);
+							const inp = b.closest('.conds').querySelector('[data-f="cust"]');
+							const v = inp.value.trim();
+							if (v)
+							{
+								e.conds = e.conds || [];
+								e.conds.push(v);
+								commit();
+							}
+							break;
+						}
+						case 'addtimer':
+						{
+							const nm = T.querySelector('[data-f="tname"]');
+							const rd = T.querySelector('[data-f="trounds"]');
+							timers().push({
+								id: uid(),
+								name: nm.value.trim() || 'Effect',
+								rounds: Math.max(1, parseInt(rd.value) || 1)
+							});
+							nm.value = '';
+							commit();
+							break;
+						}
+						case 'tminus':
+						case 'tplus':
+						case 'trm':
+						{
+							const t = timers().find(x => x.id === b.closest('[data-t]').dataset.t);
+							if (!t)
+							{
+								break;
+							}
+							if (a === 'trm')
+							{
+								DB.combat.timers = timers().filter(x => x !== t);
+							}
+							else
+							{
+								t.rounds = Math.max(0, t.rounds + (a === 'tplus' ? 1 : -1));
+							}
+							commit();
+							break;
+						}
+						case 'open':
+						{
+							const e = ent(b);
+							ui.open.has(e.id) ? ui.open.delete(e.id) : ui.open.add(e.id);
+							renderList();
+							break;
+						}
+						case 'edit':
+						{
+							const e = ent(b);
+							ui.edit.has(e.id) ? ui.edit.delete(e.id) : ui.edit.add(e.id);
+							renderList();
+							break;
+						}
+						case 'reroll':
+						{
+							const e = ent(b);
+							rollInitFor([e]);
+							sortEntries();
+							commit();
+							break;
+						}
+						case 'remove':
+							removeEntry(ent(b).id);
+							commit();
+							break;
+						case 'dmg':
+						case 'heal':
+						{
+							const e = ent(b);
+							const m = mem(e, b) || e.members[0];
+							const row = b.closest('.mrow');
+							const inp = row.querySelector('[data-f="amt"]');
+							const n = parseInt(inp.value);
+							if (!n || n < 0)
+							{
+								inp.focus();
+								break;
+							}
+							if (a === 'dmg')
+							{
+								m.hp = Math.max(0, m.hp - n);
+							}
+							else
+							{
+								m.hp = m.max ? Math.min(m.max, m.hp + n) : m.hp + n;
+							}
+							commit();
+							if (a === 'dmg' && e.conc)
+							{
+								flash(e.name + ' is concentrating: Constitution save DC ' + Math.max(10, Math.floor(n / 2)));
+							}
+							break;
+						}
+						case 'addmember':
+						{
+							const e = ent(b);
+							const base = e.name.replace(/ \d+$/, '');
+							const nums = e.members.map(m =>
+							{
+								const x = /(\d+)$/.exec(m.name);
+								return x ? +x[1] : 0;
+							});
+							const max = e.members[0] ? e.members[0].max : 0;
+							e.members.push({
+								id: uid(),
+								name: base + ' ' + (Math.max(0, ...nums) + 1),
+								hp: max,
+								max
+							});
+							commit();
+							break;
+						}
+						case 'rmmember':
+						{
+							const e = ent(b);
+							const m = mem(e, b);
+							e.members = e.members.filter(x => x !== m);
+							if (!e.members.length)
+							{
+								removeEntry(e.id);
+							}
+							commit();
+							break;
+						}
+						case 'save':
+						{
+							const e = ent(b);
+							const i = +b.dataset.x;
+							withAnim(() => rollSave(e, i), '1d20', {
+								mode: DB.prefs.mode
+							});
+							break;
+						}
+						case 'hit':
+						{
+							const e = ent(b);
+							const a2 = atk(e, b);
+							withAnim(() => attackHit(e, a2), '1d20', {
+								mode: DB.prefs.mode
+							});
+							break;
+						}
+						case 'dmgroll':
+						{
+							const e = ent(b);
+							const a2 = atk(e, b);
+							withAnim(() => attackDmg(e, a2), a2.dmg, {
+								crit: !!ui.crit[e.id + ':' + a2.id]
+							});
+							break;
+						}
+						case 'addattack':
+						{
+							const e = ent(b);
+							e.attacks.push({
+								id: uid(),
+								name: 'Attack',
+								hit: 3,
+								dmg: '1d6+1'
+							});
+							commit();
+							break;
+						}
+						case 'delattack':
+						{
+							const e = ent(b);
+							const x = atk(e, b);
+							e.attacks = e.attacks.filter(y => y !== x);
+							commit();
+							break;
+						}
+						case 'tolib':
+						{
+							const e = ent(b);
+							const name = e.name.replace(/ \d+$/, '');
+							const item = {
+								id: uid(),
+								name,
+								hp: e.members[0] ? e.members[0].max : 0,
+								ac: e.ac,
+								mod: e.mod,
+								saves: e.saves.slice(),
+								attacks: e.attacks.map(x => ({
+									name: x.name,
+									hit: x.hit,
+									dmg: x.dmg
+								}))
+							};
+							const i = DB.library.findIndex(l => l.name.toLowerCase() === name.toLowerCase());
+							if (i >= 0)
+							{
+								DB.library[i] = Object.assign(item, {
+									id: DB.library[i].id
+								});
+							}
+							else
+							{
+								DB.library.push(item);
+							}
+							renderPresets();
+							commit();
+							flash('Saved “' + name + '” to your library');
+							break;
+						}
+						case 'saveenc':
+						{
+							const n = askIn(b, 'Name this encounter:', 'Encounter ' + (DB.encounters.length + 1));
+							if (!n)
+							{
+								break;
+							}
+							DB.encounters.push({
+								id: uid(),
+								name: n,
+								date: new Date().toLocaleDateString(),
+								combat: clone(c)
+							});
+							commit();
+							flash('Encounter saved');
+							break;
+						}
+						case 'loadenc':
+						{
+							const x = DB.encounters[+b.closest('[data-i]').dataset.i];
+							if (!x)
+							{
+								break;
+							}
+							if (c.entries.length && !confIn(b, 'Replace the current combat with "' + x.name + '"?'))
+							{
+								break;
+							}
+							DB.combat = clone(x.combat);
+							ui.open.clear();
+							ui.edit.clear();
+							commit();
+							flash('Loaded “' + x.name + '”');
+							break;
+						}
+						case 'delenc':
+						{
+							const i = +b.closest('[data-i]').dataset.i;
+							if (confIn(b, 'Delete saved encounter "' + DB.encounters[i].name + '"?'))
+							{
+								DB.encounters.splice(i, 1);
+								commit();
+							}
+							break;
+						}
+						case 'dellib':
+						{
+							const i = +b.closest('[data-i]').dataset.i;
+							DB.library.splice(i, 1);
+							renderPresets();
+							commit();
+							break;
+						}
+						case 'export':
+							exportFile();
+							break;
+						case 'import':
+							fileInput.click();
+							break;
+						case 'newcombat':
+							if (confIn(b, 'Remove ALL creatures and reset the round?'))
+							{
+								DB.combat = {
+									round: 1,
+									currentId: null,
+									entries: [],
+									timers: []
+								};
+								ui.open.clear();
+								ui.edit.clear();
+								commit();
+							}
+							break;
+					}
+				}
+				catch (err)
+				{
+					flash('Error: ' + err.message);
+				}
+			}
+
+			function scrollCur()
+			{
+				const x = T.querySelector('.ecard.current');
+				if (x && x.scrollIntoView)
+				{
+					x.scrollIntoView({
+						block: 'nearest'
+					});
+				}
+			}
+
+			function tChange(a, el)
+			{
+				if (a === 'preset')
+				{
+					applyPreset(el.value);
+					return;
+				}
+				if (a === 'mode')
+				{
+					DB.prefs.mode = el.value;
+					save();
+					return;
+				}
+				if (a === 'dc')
+				{
+					DB.prefs.dc = el.value;
+					save();
+					return;
+				}
+				if (a === 'skip')
+				{
+					DB.prefs.skipDead = el.checked;
+					save();
+					return;
+				}
+				if (a === 'tname2')
+				{
+					const t = timers().find(x => x.id === el.closest('[data-t]').dataset.t);
+					if (t)
+					{
+						t.name = el.value;
+						save();
+					}
+					return;
+				}
+				const e = ent(el);
+				if (!e)
+				{
+					return;
+				}
+				switch (a)
+				{
+					case 'init':
+						e.init = parseFloat(el.value) || 0;
+						sortEntries();
+						break;
+					case 'name':
+						e.name = el.value;
+						break;
+					case 'ac':
+						e.ac = parseInt(el.value) || 0;
+						break;
+					case 'mod':
+						e.mod = parseInt(el.value) || 0;
+						break;
+					case 'notes':
+						e.notes = el.value;
+						break;
+					case 'conc':
+						e.conc = el.checked;
+						break;
+					case 'sethp':
+					{
+						const m = mem(e, el);
+						m.hp = Math.max(0, parseInt(el.value) || 0);
+						if (m.max === 0)
+						{
+							m.max = m.hp;
+						}
+						else if (m.hp > m.max)
+						{
+							m.hp = m.max;
+						}
+						break;
+					}
+					case 'setmax':
+					{
+						const m = mem(e, el);
+						const old = m.max;
+						m.max = Math.max(0, parseInt(el.value) || 0);
+						if (old === 0 && m.hp === 0)
+						{
+							m.hp = m.max;
+						}
+						if (m.hp > m.max)
+						{
+							m.hp = m.max;
+						}
+						break;
+					}
+					case 'mname':
+						mem(e, el).name = el.value;
+						break;
+					case 'savemod':
+						e.saves[+el.dataset.x] = parseInt(el.value) || 0;
+						break;
+					case 'atkname':
+						atk(e, el).name = el.value;
+						break;
+					case 'atkhit':
+						atk(e, el).hit = parseInt(el.value) || 0;
+						break;
+					case 'atkdmg':
+						atk(e, el).dmg = el.value;
+						break;
+					case 'atkcrit':
+						ui.crit[e.id + ':' + atk(e, el).id] = el.checked;
+						save();
+						return;
+					default:
+						return;
+				}
+				commit();
+			}
+			T.addEventListener('click', e =>
+			{
+				const b = e.target.closest('button[data-a]');
+				if (b)
+				{
+					tAct(b.dataset.a, b);
+				}
+			});
+			T.addEventListener('change', e =>
+			{
+				const el = e.target;
+				if (el.dataset && el.dataset.a && el.tagName !== 'BUTTON')
+				{
+					tChange(el.dataset.a, el);
+				}
+			});
+			T.addEventListener('keydown', e =>
+			{
+				if (e.key !== 'Enter' || !e.target.matches)
+				{
+					return;
+				}
+				if (e.target.matches('[data-f="amt"]'))
+				{
+					tAct('dmg', e.target);
+				}
+				else if (e.target.matches('[data-f="cust"]'))
+				{
+					tAct('addcond', e.target);
+				}
+				else if (e.target.matches('[data-f="tname"]'))
+				{
+					tAct('addtimer', e.target);
+				}
+			});
+
+			renderPresets();
+			syncToolbar();
+			syncRoller();
+			renderHist();
+			renderTracker();
+			updPop();
+		})();
+	</script>
+</body>
+</html>

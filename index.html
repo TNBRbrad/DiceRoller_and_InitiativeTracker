@@ -3,7 +3,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width,initial-scale=1">
-	<title>Bradley's DnD helper</title>
+	<title>Bradley's Ingenious DnD Dice and Initiative Program (BIDDIP)</title>
 	<style id="appstyle">
 		:root {
 			--green: #2e8b3d;
@@ -752,12 +752,67 @@
 		.trow.ended {
 			background: #fde0e0
 		}
+
+		.tp-round {
+			text-align: center;
+			color: var(--muted)
+		}
+
+		.tp-round b {
+			display: block;
+			font-size: 46px;
+			line-height: 1.1;
+			color: #000
+		}
+
+		.tp-now {
+			border: 2px solid #000;
+			background: #fff6cc;
+			text-align: center;
+			padding: 10px;
+			margin: 8px 0
+		}
+
+		.tp-now .nm2 {
+			font-size: 30px;
+			font-weight: bold
+		}
+
+		.tp-next {
+			text-align: center;
+			color: var(--muted);
+			margin: 6px 0
+		}
+
+		.tp-next b {
+			color: #000;
+			font-size: 17px
+		}
+
+		.tp-nav {
+			display: flex;
+			gap: 6px;
+			margin-bottom: 8px
+		}
+
+		.tp-go {
+			flex: 1;
+			font-size: 22px;
+			padding: 8px
+		}
+
+		.tp-detail .mrow {
+			flex-basis: 100%
+		}
+
+		.turnpanel .trow {
+			justify-content: space-between
+		}
 	</style>
 </head>
 <body>
 	<header class="top">
-		<h1>Bradley's DnD helper</h1>
-		<span class="hint">Saves automatically in this browser. Use Export for a backup file.</span>
+		<h1>Bradley's Ingenious DnD Dice and Initiative Program (BIDDIP)</h1>
 	</header>
 	<main class="layout">
 		<section class="slot" id="slot-roller"></section>
@@ -837,6 +892,8 @@
 				err: ''
 			};
 			const wins = {};
+			let pipWin = null;
+			let pipPending = false;
 
 			function parseExpr(str)
 			{
@@ -989,11 +1046,11 @@
 				'<div class="ph"><h2>Dice Roller</h2><button data-a="popout" data-k="roller" class="popbtn">Pop out</button></div>' +
 				'<div class="dgrid">' + DICE.map(s => '<div class="die"><button data-a="dieminus" data-s="' + s + '">−</button><button class="dn" data-a="dieplus" data-s="' + s + '">d' + s + '<span class="cnt" data-c="' + s + '">0</span></button><button data-a="dieplus" data-s="' + s + '">+</button></div>').join('') + '</div>' +
 				'<div class="modrow"><span>Modifier</span><button data-a="modminus" data-d="5">−5</button><button data-a="modminus" data-d="1">−1</button><input type="number" class="num" data-r="mod" data-a="modset"><button data-a="modplus" data-d="1">+1</button><button data-a="modplus" data-d="5">+5</button></div>' +
-				'<div class="exprrow"><input data-r="expr" data-a="expr" placeholder="2d6 + 1d4 + 3   ·   4d6kh3   ·   d20+5" spellcheck="false" autocomplete="off"><button class="primary big" data-a="roll">Roll</button></div>' +
+				'<div class="exprrow"><input data-r="expr" data-a="expr" placeholder="2d6 + 3" spellcheck="false" autocomplete="off"><button class="primary big" data-a="roll">Roll</button></div>' +
 				'<div class="opts"><label><input type="checkbox" data-a="crit"> Crit (doubles dice)</label><label><input type="checkbox" data-a="anim"> Animate</label>' +
 				'<button data-a="setmode" data-v="normal">Normal</button><button data-a="setmode" data-v="adv">Adv</button><button data-a="setmode" data-v="dis">Dis</button>' +
 				'<button data-a="clear">Clear</button><button data-a="favsave">Save roll</button></div>' +
-				'<div class="hint" style="margin-top:4px">Adv/Dis applies to a single d20. Crit doubles dice only, not modifiers. Supports keep-highest/lowest like 4d6kh3.</div>' +
+				'<div class="hint" style="margin-top:4px">Advantage and Disadvantage applies only to a single d20. Crit doubles dice only, not modifiers. Supports keep-highest/lowest like 4d6kh3.</div>' +
 				'<div class="avg" data-r="avg"></div>' +
 				'<div class="err" data-r="err"></div>' +
 				'<div class="last" data-r="last"></div>' +
@@ -1005,7 +1062,7 @@
 			T.className = 'panel';
 			T.id = 'tracker';
 			T.innerHTML =
-				'<div class="ph"><h2>Initiative Tracker</h2><button data-a="popout" data-k="tracker" class="popbtn">Pop out</button></div>' +
+				'<div class="ph"><h2>Initiative Tracker</h2><span><button data-a="popturn" class="turnbtn">Turn view</button> <button data-a="popout" data-k="tracker" class="popbtn">Pop out</button></span></div>' +
 				'<div class="banner" data-r="banner"></div>' +
 				'<div class="turnbar"><button data-a="prev">◀ Prev</button><div class="turn" data-r="turn"></div><button data-a="next" class="primary big">Next ▶</button></div>' +
 				'<div class="toolbar"><button data-a="start">Start / Restart</button><button data-a="rollall">Reroll NPC initiative</button><button data-a="cleardead">Remove defeated</button></div>' +
@@ -1026,28 +1083,46 @@
 				'<div data-r="list"></div>' +
 				'<details class="box"><summary>Save / Load / Library</summary><div data-r="data"></div></details>';
 
+						const C = document.createElement('div');
+			C.className = 'panel turnpanel';
+			C.id = 'turnview';
+
 			const slots = {
 				roller: document.getElementById('slot-roller'),
-				tracker: document.getElementById('slot-tracker')
+				tracker: document.getElementById('slot-tracker'),
+				turn: document.createElement('div')
+			};
+			const PANEL_NAMES = {
+				roller: 'dice roller',
+				tracker: 'initiative tracker',
+				turn: 'turn view'
+			};
+			const PANEL_SIZE = {
+				roller: [420, 760],
+				tracker: [600, 800],
+				turn: [440, 700]
+			};
+			const PANEL_TITLES = {
+				roller: 'Dice Roller',
+				tracker: 'Initiative',
+				turn: 'Current Turn'
 			};
 			const P = {
 				roller: R,
-				tracker: T
+				tracker: T,
+				turn: C
 			};
 			Object.keys(slots).forEach(k =>
 			{
 				slots[k].appendChild(P[k]);
 				const n = document.createElement('div');
 				n.className = 'awaynote';
-				n.innerHTML = 'The ' + (k === 'roller' ? 'dice roller' : 'initiative tracker') + ' is in its own window.<br><br>';
+				n.innerHTML = 'The ' + PANEL_NAMES[k] + ' is in its own window.<br><br>';
 				const b = document.createElement('button');
 				b.textContent = 'Bring it back';
 				b.onclick = () =>
 				{
-					if (wins[k])
-					{
-						wins[k].close();
-					}
+					giveBack(k);
 				};
 				n.appendChild(b);
 				slots[k].appendChild(n);
@@ -1058,17 +1133,118 @@
 			fileInput.style.display = 'none';
 			document.body.appendChild(fileInput);
 
+			function retitle(w)
+			{
+				w.document.title = Object.keys(wins).filter(k => wins[k] === w).map(k => PANEL_TITLES[k]).join(' + ');
+			}
+
+			function placeInWindow(key, w)
+			{
+				const d = w.document;
+				let box = d.getElementById('popbox');
+				if (!box)
+				{
+					const st = d.createElement('style');
+					st.textContent = document.getElementById('appstyle').textContent +
+						'\n#popbox{display:flex;align-items:flex-start;overflow:auto}\n#popbox .panel{flex:none;border-right:1px solid #bbb}';
+					d.head.appendChild(st);
+					d.body.className = 'popped';
+					box = d.createElement('div');
+					box.id = 'popbox';
+					d.body.appendChild(box);
+				}
+				P[key].style.width = PANEL_SIZE[key][0] + 'px';
+				box.appendChild(P[key]);
+				P[key].classList.add('inpop');
+				slots[key].classList.add('away');
+				wins[key] = w;
+				retitle(w);
+				updPop();
+			}
+
+			function growPip()
+			{
+				let width = 0;
+				let height = 0;
+				Object.keys(wins).forEach(k =>
+				{
+					if (wins[k] === pipWin)
+					{
+						width += PANEL_SIZE[k][0] + 2;
+						height = Math.max(height, PANEL_SIZE[k][1]);
+					}
+				});
+				try
+				{
+					pipWin.resizeTo(Math.min(width, screen.availWidth - 40), Math.min(height, screen.availHeight - 80));
+				}
+				catch (e)
+				{}
+			}
+
+			function giveBack(key)
+			{
+				const w = wins[key];
+				if (!w)
+				{
+					return;
+				}
+				delete wins[key];
+				P[key].style.width = '';
+				P[key].classList.remove('inpop');
+				slots[key].insertBefore(P[key], slots[key].firstChild);
+				slots[key].classList.remove('away');
+				if (Object.keys(wins).some(k => wins[k] === w))
+				{
+					retitle(w);
+				}
+				else
+				{
+					if (w === pipWin)
+					{
+						pipWin = null;
+					}
+					try
+					{
+						w.close();
+					}
+					catch (e)
+					{}
+				}
+				updPop();
+			}
+
+			function windowClosed(w)
+			{
+				if (w === pipWin)
+				{
+					pipWin = null;
+				}
+				Object.keys(wins).filter(k => wins[k] === w).forEach(giveBack);
+			}
+
 			async function popOut(key)
 			{
 				if (wins[key])
 				{
-					wins[key].close();
+					giveBack(key);
 					return;
 				}
-				const size = key === 'roller' ? [420, 760] : [600, 800];
+				if (pipWin)
+				{
+					placeInWindow(key, pipWin);
+					growPip();
+					return;
+				}
+				if (pipPending)
+				{
+					return;
+				}
+				const size = PANEL_SIZE[key];
 				let w = null;
 				if ('documentPictureInPicture' in window)
 				{
+					pipPending = true;
 					try
 					{
 						w = await window.documentPictureInPicture.requestWindow({
@@ -1079,6 +1255,11 @@
 					catch (e)
 					{
 						w = null;
+					}
+					pipPending = false;
+					if (w)
+					{
+						pipWin = w;
 					}
 				}
 				if (!w)
@@ -1091,39 +1272,19 @@
 					{
 						w = null;
 					}
+					if (w)
+					{
+						flash('This browser cannot keep pop-outs on top of other windows. Chrome or Edge can.');
+					}
 				}
 				if (!w)
 				{
 					alert('The browser blocked the pop-out window. Allow pop-ups for this page and try again.');
 					return;
 				}
-				const d = w.document;
-				d.title = key === 'roller' ? 'Dice Roller' : 'Initiative';
-				const st = d.createElement('style');
-				st.textContent = document.getElementById('appstyle').textContent;
-				d.head.appendChild(st);
-				d.body.className = 'popped';
-				d.body.appendChild(P[key]);
-				P[key].classList.add('inpop');
-				slots[key].classList.add('away');
-				wins[key] = w;
-				updPop();
-				const back = () =>
-				{
-					if (wins[key] !== w)
-					{
-						return;
-					}
-					delete wins[key];
-					slots[key].insertBefore(P[key], slots[key].firstChild);
-					P[key].classList.remove('inpop');
-					slots[key].classList.remove('away');
-					updPop();
-				};
-				w.addEventListener('pagehide', back);
-				w.addEventListener('unload', back);
+				w.addEventListener('pagehide', () => windowClosed(w));
+				placeInWindow(key, w);
 			}
-
 			function updPop()
 			{
 				Object.keys(P).forEach(k =>
@@ -1134,6 +1295,11 @@
 						b.textContent = wins[k] ? 'Return' : 'Pop out';
 					}
 				});
+				const tb = T.querySelector('.turnbtn');
+				if (tb)
+				{
+					tb.textContent = wins.turn ? 'Close turn view' : 'Turn view';
+				}
 			}
 			window.addEventListener('beforeunload', () => Object.keys(wins).forEach(k =>
 			{
@@ -1221,9 +1387,9 @@
 			function renderHist()
 			{
 				const L = DB.last;
-				q(R, 'last').innerHTML = L ? '<div class="lr ' + (L.tag || '') + '"><div class="lab">' + esc(L.label) + '</div><div class="tot">' + L.total + '</div><div class="brk">' + L.html + '</div></div>' : '<div class="hint">Build a roll above and hit Roll.</div>';
+				q(R, 'last').innerHTML = L ? '<div class="lr ' + (L.tag || '') + '"><div class="lab">' + esc(L.label) + '</div><div class="tot">' + L.total + '</div><div class="brk">' + L.html + '</div></div>' : '<div class="hint">Roll</div>';
 				q(R, 'favs').innerHTML = DB.favorites.map((f, i) => '<span class="fav" data-i="' + i + '"><button data-a="fav" title="' + esc(f.expr) + '">' + esc(f.name) + '</button><button data-a="favdel">✕</button></span>').join('');
-				q(R, 'hist').innerHTML = DB.history.map(h => '<div class="h ' + (h.tag || '') + '"><span class="t">' + esc(h.t || '') + '</span><span class="f"><b>' + esc(h.label) + '</b><br>' + h.html + '</span><span class="tot">' + h.total + '</span></div>').join('') || '<div class="hint">No rolls yet.</div>';
+				q(R, 'hist').innerHTML = DB.history.map(h => '<div class="h ' + (h.tag || '') + '"><span class="t">' + esc(h.t || '') + '</span><span class="f"><b>' + esc(h.label) + '</b><br>' + h.html + '</span><span class="tot">' + h.total + '</span></div>').join('') || '<div class="hint">Nothing here yet</div>';
 			}
 
 			function withTerms(fn)
@@ -1463,10 +1629,17 @@
 				const list = animList(expr, o);
 				const t0 = Date.now();
 				q(R, 'last').innerHTML = '<div class="lr"><div class="lab">Rolling</div>' + diceHTML(list, '') + '</div>';
-				q(T, 'banner').innerHTML = diceHTML(list, 'sm');
+				[T, C].forEach(p =>
+				{
+					const bn = q(p, 'banner');
+					if (bn)
+					{
+						bn.innerHTML = diceHTML(list, 'sm');
+					}
+				});
 				const iv = setInterval(() =>
 				{
-					[R, T].forEach(p => p.querySelectorAll('.die3').forEach(d =>
+					[R, T, C].forEach(p => p.querySelectorAll('.die3').forEach(d =>
 					{
 						d.firstChild.textContent = rnd(+d.dataset.s);
 					}));
@@ -1652,15 +1825,22 @@
 				DB.combat.entries.sort((a, b) => (b.init - a.init) || (b.mod - a.mod));
 			}
 
-			function flash(m)
+						function flash(m)
 			{
-				const el = q(T, 'msg');
-				el.textContent = m;
-				clearTimeout(flash.t);
-				flash.t = setTimeout(() =>
+				const set = txt =>
 				{
-					el.textContent = '';
-				}, 3500);
+					[T, C].forEach(p =>
+					{
+						const el = q(p, 'msg');
+						if (el)
+						{
+							el.textContent = txt;
+						}
+					});
+				};
+				set(m);
+				clearTimeout(flash.t);
+				flash.t = setTimeout(() => set(''), 3500);
 			}
 
 			function commit()
@@ -2018,6 +2198,7 @@
 					tag: crit ? 'crit' : r.nat === 1 ? 'fumble' : ''
 				});
 				renderList();
+				renderTurnPanel();
 			}
 
 			function attackDmg(e, a)
@@ -2034,10 +2215,18 @@
 				});
 			}
 
-			function renderBanner()
+						function renderBanner()
 			{
 				const L = DB.last;
-				q(T, 'banner').innerHTML = L ? '<b>' + esc(L.label) + '</b> → <span class="tot">' + L.total + '</span> <span class="brk">' + L.html + '</span>' : 'Last roll shows here.';
+				const html = L ? '<b>' + esc(L.label) + '</b> → <span class="tot">' + L.total + '</span> <span class="brk">' + L.html + '</span>' : 'Last roll shows here.';
+				[T, C].forEach(p =>
+				{
+					const bn = q(p, 'banner');
+					if (bn)
+					{
+						bn.innerHTML = html;
+					}
+				});
 			}
 
 			function renderTurn()
@@ -2104,6 +2293,102 @@
 				return t.length ? '<div class="tags">' + t.map(c => '<span class="tag">' + esc(c) + '</span>').join('') + '</div>' : '';
 			}
 
+			function savesHTML(e)
+			{
+				return '<div class="saves"><span class="hint">Saves:</span>' + ABS.map((a, i) => '<button class="sv" data-a="save" data-x="' + i + '">' + a.toUpperCase() + ' ' + fmt(e.saves[i]) + '</button>').join('') + '</div>';
+			}
+
+			function attacksHTML(e)
+			{
+				return e.attacks.map(a => '<div class="atk" data-x="' + a.id + '"><span class="an">' + esc(a.name) + '</span><button data-a="hit">To hit ' + fmt(a.hit) + '</button><button data-a="dmgroll">Dmg ' + esc(a.dmg) + avgText(a.dmg) + '</button><label><input type="checkbox" data-a="atkcrit" ' + (ui.crit[e.id + ':' + a.id] ? 'checked' : '') + '> crit</label></div>').join('');
+			}
+
+			function subText(e)
+			{
+				const parts = [];
+				if (e.ac)
+				{
+					parts.push('AC ' + e.ac);
+				}
+				if (e.group)
+				{
+					parts.push(aliveM(e).length + '/' + e.members.length + ' alive');
+				}
+				if (e.player)
+				{
+					parts.push('player');
+				}
+				if (e.notes)
+				{
+					parts.push(esc(e.notes));
+				}
+				return parts.join(' · ');
+			}
+
+			function nextEntry(cur)
+			{
+				const L = DB.combat.entries;
+				const i = L.indexOf(cur);
+				if (i < 0)
+				{
+					return null;
+				}
+				for (let k = 1; k < L.length; k++)
+				{
+					const j = i + k;
+					if (isActive(L[j % L.length]))
+					{
+						return {
+							e: L[j % L.length],
+							wrap: j >= L.length
+						};
+					}
+				}
+				return null;
+			}
+
+			function renderTurnPanel()
+			{
+				const c = DB.combat;
+				const e = c.entries.find(x => x.id === c.currentId);
+				let h = '<div class="tp-round">Round<b>' + c.round + '</b></div>';
+				if (!e)
+				{
+					h += '<div class="tp-now"><div class="nm2">Not started</div></div>' +
+						'<button class="primary tp-go" data-a="start">Start combat</button>';
+				}
+				else
+				{
+					const nx = nextEntry(e);
+					h += '<div class="tp-now"><div class="hint">Current turn</div><div class="nm2">' + esc(e.name) + '</div><div class="hint">Initiative ' + e.init + '</div></div>' +
+						'<div class="tp-next">Next up: <b>' + (nx ? esc(nx.e.name) + (nx.wrap ? ' (next round)' : '') : 'nobody else') + '</b></div>' +
+						'<div class="tp-nav"><button data-a="prev">◀ Prev</button><button class="primary tp-go" data-a="next">Next ▶</button></div>' +
+						'<div class="tp-detail" data-id="' + e.id + '">' +
+						'<div class="sub">' + subText(e) + '</div>' + tagsHTML(e);
+					if (e.members.some(m => m.max > 0))
+					{
+						h += '<h4>Health</h4>' + (e.group ? e.members.map(m => hpCtl(m, e.id, true)).join('') : hpCtl(e.members[0], e.id, false));
+					}
+					if (e.attacks.length)
+					{
+						h += '<h4>Attacks</h4>' + attacksHTML(e);
+					}
+					if (!e.player)
+					{
+						h += savesHTML(e);
+					}
+					h += '<h4>Conditions</h4>' + condHTML(e) + '</div>';
+				}
+				const tm = timers();
+				if (tm.length)
+				{
+					h += '<h4>Round timers</h4>' + tm.map(t => '<div class="trow' + (t.rounds === 0 ? ' ended' : '') + '"><span>' + esc(t.name) + '</span><b>' + (t.rounds === 0 ? 'ENDED' : t.rounds + ' left') + '</b></div>').join('');
+				}
+				h += '<div class="msg" data-r="msg"></div><div class="banner" data-r="banner"></div>';
+				C.innerHTML = h;
+				renderBanner();
+			}
+
 			function entryHTML(e)
 			{
 				const cur = DB.combat.currentId === e.id;
@@ -2126,13 +2411,12 @@
 				}
 				const detail = !open ? '' : '<div class="detail">' +
 					(e.group ? e.members.map(m => hpCtl(m, e.id, true)).join('') + '<button data-a="addmember">+ Add another</button>' : '') +
-					'<div class="saves"><span class="hint">Saves:</span>' + ABS.map((a, i) => '<button class="sv" data-a="save" data-x="' + i + '">' + a.toUpperCase() + ' ' + fmt(e.saves[i]) + '</button>').join('') + '</div>' +
-					e.attacks.map(a => '<div class="atk" data-x="' + a.id + '"><span class="an">' + esc(a.name) + '</span><button data-a="hit">To hit ' + fmt(a.hit) + '</button><button data-a="dmgroll">Dmg ' + esc(a.dmg) + avgText(a.dmg) + '</button><label><input type="checkbox" data-a="atkcrit" ' + (ui.crit[e.id + ':' + a.id] ? 'checked' : '') + '> crit</label></div>').join('') +
+					savesHTML(e) + attacksHTML(e) +
 					condHTML(e) + '<div class="tools"><button data-a="edit">' + (edit ? 'Close editor' : 'Edit stats / attacks') + '</button><button data-a="tolib">Save to library</button></div>' +
 					(edit ? editHTML(e) : '') + '</div>';
 				return '<div class="ecard ' + (cur ? 'current' : '') + ' ' + (defeated(e) ? 'defeated' : '') + '" data-id="' + e.id + '">' +
 					'<div class="ehead"><input class="init" type="number" step="any" data-a="init" value="' + e.init + '" title="Initiative">' +
-					'<div class="ename"><input class="nm" data-a="name" value="' + esc(e.name) + '"><div class="sub">' + [e.ac ? 'AC ' + e.ac : '', e.group ? alive + '/' + e.members.length + ' alive' : '', e.player ? 'player' : '', e.notes ? esc(e.notes) : ''].filter(Boolean).join(' · ') + '</div>' + tagsHTML(e) + '</div>' +
+					'<div class="ename"><input class="nm" data-a="name" value="' + esc(e.name) + '"><div class="sub">' + subText(e) + '</div>' + tagsHTML(e) + '</div>' +
 					mid +
 					'<div class="eb"><button data-a="reroll" title="Reroll initiative">Reroll</button><button data-a="open" title="Details, saves, attacks">' + (open ? '▲' : '▼') + '</button><button data-a="remove" class="x" title="Remove">✕</button></div></div>' + detail + '</div>';
 			}
@@ -2140,7 +2424,7 @@
 			function renderList()
 			{
 				const L = DB.combat.entries;
-				q(T, 'list').innerHTML = L.length ? L.map(entryHTML).join('') : '<div class="hint" style="padding:14px;text-align:center">No creatures yet. Add some above.</div>';
+				q(T, 'list').innerHTML = L.length ? L.map(entryHTML).join('') : '<div class="hint" style="padding:14px;text-align:center">Nothing here yet</div>';
 			}
 
 			function renderData()
@@ -2149,9 +2433,9 @@
 				const lib = DB.library;
 				q(T, 'data').innerHTML =
 					'<div class="tools"><button data-a="saveenc">Save current encounter…</button><button data-a="export">Export backup file</button><button data-a="import">Import file</button><button data-a="newcombat" class="bad">Clear combat</button></div>' +
-					'<h4>Saved encounters</h4>' + (encs.length ? encs.map((x, i) => '<div class="row2" data-i="' + i + '"><span>' + esc(x.name) + ' <span class="hint">· ' + x.combat.entries.length + ' entries · round ' + x.combat.round + ' · ' + esc(x.date) + '</span></span><span><button data-a="loadenc">Load</button> <button data-a="delenc" class="x">✕</button></span></div>').join('') : '<div class="hint">None saved yet.</div>') +
+					'<h4>Saved encounters</h4>' + (encs.length ? encs.map((x, i) => '<div class="row2" data-i="' + i + '"><span>' + esc(x.name) + ' <span class="hint">· ' + x.combat.entries.length + ' entries · round ' + x.combat.round + ' · ' + esc(x.date) + '</span></span><span><button data-a="loadenc">Load</button> <button data-a="delenc" class="x">✕</button></span></div>').join('') : '<div class="hint">Nothing here yet</div>') +
 					'<h4>My creature library</h4>' + (lib.length ? lib.map((x, i) => '<div class="row2" data-i="' + i + '"><span>' + esc(x.name) + ' <span class="hint">· HP ' + x.hp + ' · AC ' + x.ac + ' · ' + x.attacks.length + ' attacks</span></span><button data-a="dellib" class="x">✕</button></div>').join('') : '<div class="hint">Use “Save to library” on any creature, then pick it from the Preset list.</div>') +
-					'<p class="hint">The current combat auto-saves in this browser every change, so you can close the tab mid-fight. Use Export for a file backup or to move to another computer.</p>';
+					'<p class="hint">The current combat saves in this browser after every change, so you can close the tab mid encounter. Use Export for a file backup just in case or to move to another computer.</p>';
 			}
 
 			function syncToolbar()
@@ -2164,11 +2448,12 @@
 			function renderTimers()
 			{
 				const L = timers();
-				q(T, 'timers').innerHTML = L.length ? L.map(t => '<div class="trow' + (t.rounds === 0 ? ' ended' : '') + '" data-t="' + t.id + '"><input data-a="tname2" value="' + esc(t.name) + '"><button data-a="tminus">-</button><b>' + (t.rounds === 0 ? 'ENDED' : t.rounds) + '</b><button data-a="tplus">+</button><span class="hint">rounds left</span><button class="x" data-a="trm">✕</button></div>').join('') : '<div class="hint">No timers yet.</div>';
+				q(T, 'timers').innerHTML = L.length ? L.map(t => '<div class="trow' + (t.rounds === 0 ? ' ended' : '') + '" data-t="' + t.id + '"><input data-a="tname2" value="' + esc(t.name) + '"><button data-a="tminus">-</button><b>' + (t.rounds === 0 ? 'ENDED' : t.rounds) + '</b><button data-a="tplus">+</button><span class="hint">rounds left</span><button class="x" data-a="trm">✕</button></div>').join('') : '<div class="hint">Nothing here yet</div>';
 			}
 
 			function renderTracker()
 			{
+				renderTurnPanel();
 				renderTimers();
 				renderTurn();
 				renderList();
@@ -2256,6 +2541,9 @@
 					{
 						case 'popout':
 							popOut('tracker');
+							break;
+						case 'popturn':
+							popOut('turn');
 							break;
 						case 'next':
 						{
@@ -2744,46 +3032,56 @@
 					case 'atkcrit':
 						ui.crit[e.id + ':' + atk(e, el).id] = el.checked;
 						save();
+						[T, C].forEach(p =>
+						{
+							p.querySelectorAll('[data-id="' + e.id + '"] [data-x="' + atk(e, el).id + '"] [data-a="atkcrit"]').forEach(box =>
+							{
+								box.checked = el.checked;
+							});
+						});
 						return;
 					default:
 						return;
 				}
 				commit();
 			}
-			T.addEventListener('click', e =>
+			[T, C].forEach(panel =>
 			{
-				const b = e.target.closest('button[data-a]');
-				if (b)
+				panel.addEventListener('click', e =>
 				{
-					tAct(b.dataset.a, b);
-				}
-			});
-			T.addEventListener('change', e =>
-			{
-				const el = e.target;
-				if (el.dataset && el.dataset.a && el.tagName !== 'BUTTON')
+					const b = e.target.closest('button[data-a]');
+					if (b)
+					{
+						tAct(b.dataset.a, b);
+					}
+				});
+				panel.addEventListener('change', e =>
 				{
-					tChange(el.dataset.a, el);
-				}
-			});
-			T.addEventListener('keydown', e =>
-			{
-				if (e.key !== 'Enter' || !e.target.matches)
+					const el = e.target;
+					if (el.dataset && el.dataset.a && el.tagName !== 'BUTTON')
+					{
+						tChange(el.dataset.a, el);
+					}
+				});
+				panel.addEventListener('keydown', e =>
 				{
-					return;
-				}
-				if (e.target.matches('[data-f="amt"]'))
-				{
-					tAct('dmg', e.target);
-				}
-				else if (e.target.matches('[data-f="cust"]'))
-				{
-					tAct('addcond', e.target);
-				}
-				else if (e.target.matches('[data-f="tname"]'))
-				{
-					tAct('addtimer', e.target);
-				}
+					if (e.key !== 'Enter' || !e.target.matches)
+					{
+						return;
+					}
+					if (e.target.matches('[data-f="amt"]'))
+					{
+						tAct('dmg', e.target);
+					}
+					else if (e.target.matches('[data-f="cust"]'))
+					{
+						tAct('addcond', e.target);
+					}
+					else if (e.target.matches('[data-f="tname"]'))
+					{
+						tAct('addtimer', e.target);
+					}
+				});
 			});
 
 			renderPresets();
